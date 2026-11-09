@@ -1,6 +1,6 @@
 # Postrail v0.1.0 개발 계획
 
-목표: Markdown 파일 하나를 Velog·Tistory·KeyFlow로 보내고, 결과를 추적하여 수정·부분 실패 복구까지 제공하는 CLI. 현재 실행 가능한 것은 도움말·버전뿐이다. 아래 명령과 데이터 구조는 구현 전 설계다.
+목표: Markdown 파일 하나를 Velog·Tistory·KeyFlow로 보내고, 결과를 추적하여 수정·부분 실패 복구까지 제공하는 CLI. 현재 init/validate/preview/plan과 도움말·버전을 제공한다. [사용법](offline-cli.md). 인증·플랫폼 어댑터·원격 이력은 아직 미구현이며 이후 항목은 설계다.
 
 ## 진행 상태
 
@@ -9,7 +9,7 @@
 | 0. 저장소와 실행 기반 | 완료 | MIT, Bun 빌드, Node 실행, CLI 검사, GitHub CI |
 | 1A. 오픈소스 조사 | 완료 | 플랫폼별 2개 소스·고정 커밋·라이선스·제약 기록: [분석](references.md) |
 | 1B. 플랫폼 실동작 검증 | 대기 | 계정 확인, 테스트 원고 생성·조회·수정·이미지·공개 상태 증거 |
-| 2. 공통 원고·오프라인 CLI | 다음 작업 | init/validate/preview/plan을 네트워크 없이 실행 |
+| 2. 공통 원고·오프라인 CLI | 구현 완료 | init/validate/preview/plan을 네트워크 없이 실행. Node CLI 검사·파일 보호·HTML 렌더링·오류 계약 검증 |
 | 3. KeyFlow 어댑터 | 대기 | 공식 CLI 계약 확인 후 인증·생성·조회·수정 검증 |
 | 4. Velog 어댑터 | 대기 | 현재 mutation 규격 검증 후 인증·생성·이미지·수정 검증 |
 | 5. Tistory 어댑터 | 대기 | 전용 브라우저 로그인·세션·에디터·이미지·수정 검증 |
