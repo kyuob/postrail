@@ -1,14 +1,17 @@
-# Google Blogger 연결 계획
+# Google Blogger 어댑터 — 실험적
 
-대상 ID: `blogger`. 현재 CLI의 설정·원고 검증·오프라인 발행 계획에서 인식한다. **Google 로그인, 글 생성·수정·발행 어댑터는 아직 구현하지 않았다.** 이 작업은 Google 계정이나 Cloud 설정을 읽거나 바꾸지 않는다.
+대상 ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID 조회·PATCH 수정·발행/초안 전환을 구현했다. 실제 Google 계정·Cloud 설정·블로그는 아직 접근하거나 변경하지 않았다. 아래 구현은 모의 응답과 로컬 콜백 검사 대상이며 실제 지원은 묶음 검증 전까지 미확인이다.
 
 ```sh
-node dist/cli.js validate examples/blogger.md --json
-node dist/cli.js plan examples/blogger.md --to blogger --json
-node dist/cli.js plan examples/article.md --to velog,tistory,keyflow,blogger --json
+node dist/cli.js blogger check examples/blogger.md --json
+node dist/cli.js blogger login --account main --client-config /outside/repo/desktop-client.json
+node dist/cli.js blogger blogs --account main --json
+node dist/cli.js blogger status examples/blogger.md --account main --blog-id BLOG_ID --json
+node dist/cli.js blogger push examples/blogger.md --account main --blog-id BLOG_ID --confirm --json
+node dist/cli.js blogger get examples/blogger.md --account main --blog-id BLOG_ID --json
 ```
 
-Blogger 계획은 `status: unverified`, `canPublish: false`, `blockers: [ADAPTER_NOT_IMPLEMENTED]`를 반환한다. `blogger`가 유효한 대상이라는 사실과 실제 전송 지원은 구분한다. 새 `init` 설정과 설정이 없을 때의 기본 대상은 네 플랫폼이며, 기존 설정 파일에 명시한 대상 목록은 자동 변경하지 않는다. 기존 KeyFlow 실검증에 사용한 examples/article.md도 유지한다.
+`check`/`status`와 일반 `plan`은 인증·네트워크 없이 실행한다. plan은 `status:unverified`, `canPublish:false`, `LIVE_NOT_VERIFIED`와 `USE_BLOGGER_SUBCOMMAND`를 반환하며 미지원 입력도 blocker에 표시한다. 일반 publish는 아직 없다. 원래 KeyFlow 예제 article.md와 기존 설정은 바꾸지 않는다.
 
 ## 공식 인터페이스
 
@@ -19,24 +22,38 @@ Blogger 계획은 `status: unverified`, `canPublish: false`, `blockers: [ADAPTER
 | 블로그 목록/선택 | blogs.listByUser | 계정과 blogId를 명시적으로 묶고 잘못된 블로그로 전송하지 않기 |
 | 초안 생성 | posts.insert + isDraft=true | 생성 응답의 post ID와 상태 기록 |
 | 원격 조회 | posts.get | 생성·수정 후 내용과 상태 확인, 불확실한 결과의 재생성 방지 |
-| 같은 글 수정 | posts.update 또는 patch | 기존 blogId/postId 사용, 원격 수정 충돌과 상태 보존 확인 |
+| 같은 글 수정 | posts.patch | 기존 blogId/postId로 제목·본문·labels만 변경, 나머지 필드 생략 |
 | 공개 전환 | posts.publish | 명시적인 공개 요청에만 실행 |
 
-글쓰기 권한은 OAuth 2.0의 `https://www.googleapis.com/auth/blogger` scope가 필요하다. API 키만으로 사용자 글을 작성할 수 없다. 데스크톱 OAuth 클라이언트와 시스템 브라우저·PKCE·로컬 콜백 흐름을 기준으로 설계하며, API 활성화·동의 화면·배포 형태에 따른 Google 정책을 구현 전에 확인한다. 다른 MyApp 모듈의 Google 자격증명을 가져오지 않으며 토큰을 원고·프로젝트 설정·로그·Git에 넣지 않는다.
+글쓰기 권한은 OAuth 2.0의 `https://www.googleapis.com/auth/blogger` scope가 필요하다. API 키만으로 쓸 수 없다. 사용자 소유 Google Cloud 프로젝트의 Blogger API 활성화·동의 화면·Desktop app 클라이언트를 준비해야 하며, 테스트 사용자·조직 정책·검증 상태에 따라 Google이 동의를 제한할 수 있다. Postrail은 Cloud 설정을 자동 변경하지 않는다. 다른 MyApp 모듈의 Google 자격증명을 가져오지 않는다.
 
-게시글 본문은 HTML을 받으므로 Markdown을 안전하게 변환해 `content`에 넣고 태그는 `labels`에 매핑할 예정이다. Blogger posts API가 제공하는 초안/발행 상태와 Postrail의 `private`를 동일하게 취급하지 않는다. 개별 비공개 게시글 지원 여부를 확인하기 전에는 `private`를 공개 글이나 초안으로 조용히 변환하지 않는다.
+Markdown을 raw HTML 비활성 상태로 HTML 렌더링해 `content`에 넣고 태그는 `labels`로 보낸다. `draft`/`public`만 지원한다. 개별 `private`는 초안이나 공개로 바꾸지 않고 전송 전에 거절한다. 원본 Markdown과 이미지는 수정하지 않는다.
 
-게시글 문서에 이미지 URL 표현이 있어도 로컬 파일 업로드 지원을 뜻하지는 않는다. 별도 업로드 경로를 확인하기 전에는 로컬 이미지 업로드를 지원한다고 표시하지 않는다. 외부 이미지 URL의 처리 방식도 별도 검증 항목이다.
+로컬 이미지 업로드는 미지원이며 인증·전송 전에 거절한다. 원고의 원격 이미지 URL은 HTML에 유지하지만 내려받거나 재업로드하지 않는다. Google의 실제 렌더링·재호스팅은 미검증이다. 외부 이미지가 표시되면 그 호스트에 독자 요청이 발생할 수 있다.
 
-## 후속 작업과 완료 조건
+## 인증과 보관
 
-1. OAuth 설정과 계정별 안전한 세션 보관 계약 구현.
-2. 블로그 목록 조회·대상 blogId 선택 및 인증 만료 처리.
-3. Markdown → HTML 변환과 초안 생성·조회·같은 ID 수정 구현.
-4. 계정+blogId+원고 ID 기반 전송 이력, 충돌·부분 실패·unknown 처리.
-5. 이미지 경로와 공개 상태 지원표 확정 후, 승인된 테스트 원고로 실계정 검증.
+`--account`는 이메일 대신 쓰는 로컬 별칭이다. 처음 동의한 Blogger 사용자 ID에 묶으며 재로그인한 사용자가 달라지면 덮어쓰지 않는다. 사용자가 시스템 브라우저에서 계정을 직접 고른다. ID가 묶였다는 사실은 Google 이메일/OIDC 신원을 검증했다는 뜻이 아니다. 글쓰기 대상은 숫자 blogId와 ADMIN 권한을 확인한다. AUTHOR 전용 계정은 현재 미지원이다. `blogs`는 관리자 블로그 ID와 이름을 출력한다.
 
-OAuth 연결·Cloud 설정 변경·실제 블로그 전송은 현재 작업에 포함되지 않는다. 구현과 실제 계정 검증은 이후 별도 작업 범위다.
+Desktop 클라이언트 JSON은 저장소 밖의 0600 파일로 두고 `--client-config`에 경로만 준다. Web/서비스 계정 JSON은 거절한다. 파일의 임의 인증/토큰 URL을 쓰지 않고 고정 Google 엔드포인트만 호출한다. S256 PKCE와 무작위 state를 쓰며 `127.0.0.1`의 임의 포트에서 최대 3분 동안 콜백을 기다린다. Host·경로·state·단일 code를 검사하고 재사용을 막는다. 코드·토큰·인증 URL·서버 응답을 출력하지 않는다. 비밀번호나 토큰을 터미널/채팅 인자로 받지 않는다. login은 --json을 받지 않으며 실패는 일반 stderr 오류 형식이다.
+
+계정의 클라이언트 설정·access/refresh token은 사용자 홈 `~/.postrail/blogger-accounts/<계정 해시>/credentials.json`에 0600으로 저장하며 부모는 0700이다. OS Keychain 암호화 저장소가 아닌 권한 제한 로컬 JSON이므로 사용자 계정·디스크 보안에 의존한다. Git·동기화·공용 로그에 넣지 않는다. Windows는 ACL 검증이 없어 인증/자격증명 보관을 명시적으로 미지원한다. 오프라인 명령은 별개다. macOS/Linux의 실제 로그인 동작도 아직 미검증이다.
+
+만료 60초 이내의 토큰은 명령 시작 전에 refresh로 갱신한다. 서버 오류/401 뒤 원래 글쓰기를 자동 재실행하지 않는다. refresh grant가 만료/철회되면 명시적 재로그인이 필요하다. Google의 외부 Testing 앱 토큰 수명 같은 정책은 별도 운영 제약이며 영구 로그인을 보장하지 않는다. 계정 잠금으로 동시 refresh를 직렬화한다.
+
+## 전송·상태·복구
+
+새 글은 원고가 public이어도 먼저 `isDraft=true`로 생성한다. ID를 기록하고 ADMIN 조회로 초안의 제목·HTML 구조·태그·상태를 확인한 후에만 별도 publish를 호출한다. 공개 글을 draft로 바꿀 때는 먼저 revert와 초안 상태/기존 본문을 확인한 뒤 새 초안 내용을 PATCH한다. revert 실패 시 새 내용을 공개 글에 보내지 않는다. source의 visibility와 --confirm은 상태 전환에도 적용한다. 실제 공개 전송은 정확한 원고·대상·상태에 대한 승인 후에만 시험한다.
+
+수정은 저장된 blogId/postId로 PATCH하며 제목·본문·labels만 보낸다. 마지막 해시와 원격 제목·본문·태그·상태·ETag·수정시각·추가 메타데이터를 비교하고, 다른 곳에서 바뀌면 건너뛰기보다 충돌을 우선한다. PATCH와 상태 전환에는 읽은 If-Match를 보낸다. Google 문서는 조건부 수정 설계를 설명하지만 각 전환 API의 실제 ETag 적용은 묶음 검증에서 확인해야 한다. 완전한 경합 방지를 주장하지 않는다.
+
+프로젝트 기록은 `.postrail/blogger/<계정·블로그·원고 해시>/state.json`에 0600으로 저장한다. 본문·토큰 없이 ID·상태·해시를 남긴다. 첫 쓰기 전에 pending을 저장하고 실패하면 unknown으로 남긴다. 응답 ID는 읽기 확인 전에 보존한다. 자동 재생성·쓰기 재시도·리다이렉트를 하지 않는다. 정확히 한 번 전송을 보장하지 않는다. 계정 및 원고 잠금이 남거나 pending/unknown이면 원격 결과를 직접 확인한다. ID가 있으면 get으로 읽을 수 있지만 자동 복구/승격 명령은 없다. 기록을 잃거나 프로젝트를 옮기면 새 글이 생길 수 있다.
+
+POSIX 파일·디렉터리를 fsync하며 Google JSON 응답은 스트림을 읽으며 8 MiB로 제한한다. 추가 서버 HTML 정규화, OAuth 동의/갱신, 실제 권한과 상태/ETag는 실계정 검증 전까지 미확인이다. 예약·삭제·기존 글 가져오기·복구 자동화·패키지 릴리스는 범위 밖이다.
+
+## 검사와 다음 단계
+
+`bun run check:blogger`는 공통 CLI·Velog·Tistory·Blogger의 모의 응답 검사와 빌드/smoke를 실행한다. OAuth 시험은 가짜 자격증명과 로컬 loopback만 쓰며 Google 계정에 접근하지 않는다. [묶음 실계정 검증 계획](bundled-validation.md)에 따라 계정·정확한 원고·상태를 사용자가 한 번에 확인한 뒤 실제 검증한다. KeyFlow 추가 검증은 재개하지 않는다.
 
 ## 근거
 
@@ -44,5 +61,7 @@ OAuth 연결·Cloud 설정 변경·실제 블로그 전송은 현재 작업에 �
 - [API 전체 메서드](https://developers.google.com/blogger/docs/3.0/reference)
 - [초안 생성: posts.insert](https://developers.google.com/blogger/docs/3.0/reference/posts/insert)
 - [글 수정: posts.update](https://developers.google.com/blogger/docs/3.0/reference/posts/update)
+- [부분 수정과 If-Match](https://developers.google.com/blogger/docs/3.0/performance)
+- [Blogger Discovery 규격](https://blogger.googleapis.com/$discovery/rest?version=v3)
 - [게시글 HTML·labels·status 표현](https://developers.google.com/blogger/docs/3.0/reference/posts)
 - [데스크톱 OAuth 흐름](https://developers.google.com/identity/protocols/oauth2/native-app)

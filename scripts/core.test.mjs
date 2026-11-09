@@ -97,7 +97,7 @@ test("Blogger is accepted in metadata, --to and new config while its adapter sta
   const plan = json("plan", "article.md", "--to", "velog,tistory,keyflow,blogger");
   assert.equal(plan.ready, false);
   assert.deepEqual(plan.targets.find(p => p.platform === "blogger"), {
-    platform: "blogger", visibility: "draft", status: "unverified", canPublish: false, blockers: ["ADAPTER_NOT_IMPLEMENTED"],
+    platform: "blogger", visibility: "draft", status: "unverified", canPublish: false, blockers: ["LIVE_NOT_VERIFIED", "USE_BLOGGER_SUBCOMMAND"],
   });
   assert.deepEqual(json("plan", "article.md").article.targets, ["blogger"]);
 });

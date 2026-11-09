@@ -4,7 +4,7 @@ Write once. Publish across your blogs.
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
 
-> **Status: offline CLI + KeyFlow + experimental Velog/Tistory adapters.** KeyFlow is accepted by the user; additional KeyFlow acceptance testing is closed. Velog and Tistory have fixture-tested login, upload and ID-based create/update code; live account validation is pending. Tistory supports private/public posts, not draft slots. Blogger publishing is not implemented. No package has been released to a registry.
+> **Status: offline CLI + KeyFlow + experimental Velog/Tistory/Blogger adapters.** KeyFlow is accepted by the user; additional acceptance testing is closed. The other adapters are fixture-tested with bundled live account validation pending. Tistory draft slots, Blogger private posts and Blogger local image uploads are unsupported. No package has been released to a registry.
 
 ## Development
 
@@ -37,9 +37,9 @@ All four commands support `--json`. See the [offline CLI guide](docs/offline-cli
 
 See [live acceptance results and limits](docs/live-validation.md) for the scoped test facts. Per the user's decision, additional KeyFlow verification is not a remaining project gate. This acceptance does not invent tests for other features; the multi-platform publish command is still unimplemented.
 
-## Planned Google Blogger connection
+## Experimental Google Blogger adapter
 
-Use target ID `blogger` in project settings, article metadata, and `plan --to blogger`. See the [Blogger integration plan](docs/blogger.md) and [example article](examples/blogger.md). This is target registration and planning only; Google OAuth and the Blogger API adapter are not implemented.
+Run `node dist/cli.js blogger check examples/blogger.md --json` offline. `blogger login --account NAME --client-config /outside/repo/desktop-client.json` uses system-browser Google consent, PKCE and a loopback callback. `blogs` lists ADMIN blog IDs. `push ARTICLE --account NAME --blog-id ID --confirm` creates a draft, reads it back, and publishes only for explicit public input. Updates use the saved ID and PATCH; `get` checks it remotely and `status` is local. Read the [Blogger guide](docs/blogger.md) for setup, private credential storage, state transitions and limitations. Windows authentication is unsupported. `bun run check:blogger` runs core and the three experimental adapters' fixtures; it does not access real Google credentials or accounts.
 
 ## Experimental Velog adapter
 
@@ -57,7 +57,7 @@ The following is a design proposal, **not an available command**:
 postrail publish article.md --to velog,tistory,keyflow,blogger
 ```
 
-마크다운 하나로 여러 블로그에 발행하는 CLI입니다. KeyFlow는 사용자 확정으로 추가 검증을 종료했습니다. 벨로그·티스토리는 전용 브라우저 로그인·이미지 업로드·생성·동일 ID 수정 코드를 구현하고 모의 응답 검사를 마쳤으며, 실계정 검증은 블로거 구현 후 묶어서 진행할 예정입니다. 티스토리의 임시저장 슬롯과 블로거 어댑터는 미구현입니다.
+마크다운 하나로 여러 블로그에 발행하는 CLI입니다. KeyFlow는 사용자 확정으로 추가 검증을 종료했습니다. 벨로그·티스토리·블로거의 실험적 어댑터와 모의 응답 검사를 마련했으며, 다음은 묶음 실계정 검증입니다. 티스토리 임시저장, 블로거 개별 비공개 글·로컬 이미지 업로드와 공통 다중 발행은 미지원입니다.
 
 ## Roadmap
 
@@ -67,7 +67,7 @@ postrail publish article.md --to velog,tistory,keyflow,blogger
 - [x] Define Markdown input and article metadata
 - [ ] Implement per-platform adapters with explicit capability reporting
 - [x] KeyFlow adapter accepted by the user; additional acceptance testing closed
-- [x] Google Blogger target registration and official API/OAuth roadmap (adapter pending)
+- [x] Experimental Blogger Desktop OAuth and official API adapter (live validation pending)
 - [x] Offline preview and publishing plan with explicit adapter status
 - [ ] Track publication results to support updates without duplicate posts
 - [ ] Document installation and publish the first usable release

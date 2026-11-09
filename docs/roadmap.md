@@ -1,6 +1,6 @@
 # Postrail v0.1.0 개발 계획
 
-목표: Markdown 파일 하나를 Velog·Tistory·KeyFlow·Google Blogger로 보내고, 결과를 추적하여 수정·부분 실패 복구까지 제공하는 CLI. 현재 오프라인 CLI와 KeyFlow, 실계정 미검증인 Velog/Tistory 명령을 제공한다. [오프라인 사용법](offline-cli.md), [KeyFlow 사용법](keyflow.md), [Velog 사용법](velog.md), [Tistory 사용법](tistory.md), [Blogger 계획](blogger.md). KeyFlow는 사용자 확정으로 추가 검증을 종료했다. 블로거 어댑터와 다중 플랫폼 복구는 남아 있다.
+목표: Markdown 하나를 네 플랫폼으로 보내고 결과를 추적하는 CLI. 현재 오프라인 CLI와 KeyFlow, 실계정 미검증인 Velog/Tistory/Blogger 어댑터를 제공한다. [오프라인](offline-cli.md), [KeyFlow](keyflow.md), [Velog](velog.md), [Tistory](tistory.md), [Blogger](blogger.md). KeyFlow 추가 검증은 종료했다. 다음은 묶음 실계정 검증이며 공통 다중 전송·복구와 첫 릴리스는 남아 있다.
 
 ## 진행 상태
 
@@ -13,7 +13,7 @@
 | 3. KeyFlow 어댑터 | 사용자 확정·추가 검증 종료 | 기존 스킬로 사용 중인 확정 연동. [기존 실검증 기록](live-validation.md)은 보존하되 추가 검증을 완료 조건으로 요구하지 않음 |
 | 4. Velog 어댑터 | 실험적 구현·모의 응답 검사 완료, 실계정 대기 | v3 input 규격·전용 Chrome 로그인·생성·이미지·동일 ID 수정 구현. 실제 계정·원고 승인 후 실동작 검증 필요 |
 | 5. Tistory 어댑터 | 실험적 구현·모의 응답 검사 완료, 실계정 대기 | 전용 Chrome·내부 API 생성/PUT 수정·HTML·첨부 참조 구현. 비공개/공개만 지원, draft 슬롯 미구현. 실제 Config.entry·이미지 표시·동일 ID 검증 필요 |
-| 5B. Google Blogger 어댑터 | 대상 등록 완료, 구현 대기 | 공식 Blogger API v3 + 데스크톱 OAuth, blogId 선택, 초안 생성·조회·수정: [계획](blogger.md) |
+| 5B. Google Blogger 어댑터 | 실험적 구현·모의 검사 완료, 실계정 대기 | Desktop OAuth PKCE·토큰 갱신·ADMIN 블로그·초안 생성/조회/PATCH·publish/revert. private/로컬 이미지/Windows 인증 미지원: [사용법](blogger.md) |
 | 6. 다중 전송·복구 | 대기 | 부분 성공 보존, unknown 처리, ID 기반 수정, 동시 실행 방지 |
 | 7. 배포 검수 | 대기 | 깨끗한 환경 설치, 플랫폼별 E2E, 문서·패키지 검수 |
 | 8. 첫 릴리스 | 대기 | 명시적 배포 승인 후 태그·패키지·릴리스 노트 공개 |

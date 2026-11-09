@@ -5,6 +5,7 @@ import { UserError, fail, initialize, loadConfig, loadArticle, targets, summary,
 import { keyflowCommand } from "./keyflow-command.js";
 import { velogCommand } from "./velog-command.js";
 import { tistoryCommand } from "./tistory-command.js";
+import { bloggerCommand } from "./blogger-command.js";
 
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -32,6 +33,12 @@ Usage:
   postrail tistory status <article.md> --blog <name> --blog-id <id> [--json]
   postrail tistory get <article.md> --blog <name> --blog-id <id> [--json]
   postrail tistory push <article.md> --blog <name> --blog-id <id> --confirm [--json]
+  postrail blogger check <article.md> [--json]
+  postrail blogger login --account <name> --client-config <desktop-client.json>
+  postrail blogger blogs --account <name> [--json]
+  postrail blogger status <article.md> --account <name> --blog-id <id> [--json]
+  postrail blogger get <article.md> --account <name> --blog-id <id> [--json]
+  postrail blogger push <article.md> --account <name> --blog-id <id> --confirm [--json]
   postrail --help
   postrail --version
 
@@ -42,7 +49,8 @@ Existing files are never overwritten. --json returns structured results/errors.
 Multi-platform publishing is not available yet. KeyFlow uses its official CLI.
 Velog integration is experimental; live account validation is pending.
 Tistory is experimental (private/public only); live validation is pending.
-Blogger publishing is not implemented; use per-platform subcommands.`;
+Blogger uses Desktop OAuth; live validation is pending. Private/local images are unsupported.
+Use per-platform subcommands; generic multi-platform publish is not implemented.`;
 
 function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };
@@ -70,6 +78,17 @@ function parse() {
 }
 
 async function main() {
+  if (args[0] === "blogger") {
+    const result = await bloggerCommand(args.slice(1));
+    if (json) console.log(JSON.stringify(result));
+    else if (result.command === "blogger status") console.log(`Local Blogger state: ${result.state.status}`);
+    else if (result.command === "blogger check") console.log(result.canPush ? "Blogger check: passed; live validation pending." : `Blogger check: ${result.blockers.join(", ")}`);
+    else if (result.command === "blogger blogs") for (const blog of result.blogs) console.log(`${blog.blogId}: ${blog.name}`);
+    else if (result.command === "blogger push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Blogger ${result.visibility}: ${result.postId}`);
+    else if (result.command === "blogger get") console.log(`Blogger ${result.visibility}: ${result.postId}; matches last saved: ${result.matchesLastSaved}`);
+    else console.log(`${result.command}: complete.`);
+    return;
+  }
   if (args[0] === "tistory") {
     const result = await tistoryCommand(args.slice(1));
     if (json) console.log(JSON.stringify(result));
@@ -118,7 +137,7 @@ async function main() {
     }
     if (command === "plan") {
       result.ready = false;
-      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: platform === "keyflow" ? "implemented" : "unverified", canPublish: false, blockers: platform === "keyflow" ? ["USE_KEYFLOW_SUBCOMMAND"] : platform === "velog" ? ["LIVE_NOT_VERIFIED", "USE_VELOG_SUBCOMMAND"] : platform === "tistory" ? ["LIVE_NOT_VERIFIED", "USE_TISTORY_SUBCOMMAND", ...(article.meta.visibility === "draft" ? ["TISTORY_DRAFT_UNSUPPORTED"] : [])] : ["ADAPTER_NOT_IMPLEMENTED"] }));
+      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: platform === "keyflow" ? "implemented" : "unverified", canPublish: false, blockers: platform === "keyflow" ? ["USE_KEYFLOW_SUBCOMMAND"] : platform === "velog" ? ["LIVE_NOT_VERIFIED", "USE_VELOG_SUBCOMMAND"] : platform === "tistory" ? ["LIVE_NOT_VERIFIED", "USE_TISTORY_SUBCOMMAND", ...(article.meta.visibility === "draft" ? ["TISTORY_DRAFT_UNSUPPORTED"] : [])] : ["LIVE_NOT_VERIFIED", "USE_BLOGGER_SUBCOMMAND", ...(article.meta.visibility === "private" ? ["BLOGGER_PRIVATE_UNSUPPORTED"] : []), ...([...article.images.values()].some(i => i.kind === "local") ? ["BLOGGER_LOCAL_IMAGE_UNSUPPORTED"] : [])] }));
     }
   }
   if (json) console.log(JSON.stringify(result));

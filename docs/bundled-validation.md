@@ -2,13 +2,17 @@
 
 2026-11-10 사용자 결정: Velog·Tistory·Google Blogger 어댑터가 준비된 뒤 실계정 검증을 한 번에 진행한다. 구현 단계의 빌드·오프라인·모의 응답 검사는 계속한다. KeyFlow는 기존 사용자 확정으로 추가 검증 범위에서 제외한다.
 
-현재 Velog와 Tistory 코드는 모의 응답 검사 완료, 실제 로그인·글·이미지는 미검증이다. Blogger는 대상 등록/설계만 있으며 어댑터가 남아 있다. 이 문서는 향후 순서이며 외부 쓰기를 이미 수행했다는 기록이 아니다.
+현재 Velog/Tistory/Blogger는 실험적 구현과 모의 검사 완료, 실제 로그인·글·이미지/상태는 미검증이다. Blogger OAuth 콜백 시험은 가짜 설정과 로컬 HTTP만 사용했다. 다음 실행 단계는 이 묶음 검증이며, 이 문서 자체가 외부 쓰기 완료나 특정 계정/원고 승인을 뜻하지 않는다.
 
 ## 실행 전 입력
 
 플랫폼별 정확한 계정/블로그, 원고 경로와 해시, 상태, 이미지, 생성·동일 ID 수정 범위를 표로 준비해 사용자가 검토할 수 있게 한다. 그때 한 번에 승인을 받고 로그인은 공식 브라우저/OAuth에서 사용자가 직접 완료한다. 비밀번호·쿠키·토큰을 채팅으로 받지 않는다.
 
 Tistory는 draft 슬롯 미지원이므로 비공개 실제 글로 시험한다. Velog/Blogger는 확인된 초안 규격으로 시험한다. 공개 전송은 정확한 원고/대상/상태에 대한 별도 승인을 받는다. 테스트 글 삭제도 자동 실행하지 않는다.
+
+준비할 계정 입력은 Velog username, Tistory canonical 서브도메인+숫자 blogId, Blogger 로컬 계정 별칭+ADMIN blogId다. Blogger는 사용자 소유 Cloud 프로젝트의 API 활성화·동의 화면·Desktop client JSON 경로도 필요하다. 설정 파일과 토큰은 저장소/채팅 밖에 두며, 별도 승인 없이 기존 Firebase나 다른 앱의 Google 설정을 가져오지 않는다. macOS/Linux 인증을 대상으로 하고 Windows Blogger 인증은 미지원이다.
+
+검증 원고 후보는 `examples/velog.md`(draft), `examples/tistory.md`(private), `examples/blogger.md`(draft)다. 이미지 검사용으로 원고를 바꿔야 하면 변경본과 해시를 먼저 제시한다. Blogger는 로컬 이미지 업로드 미지원이므로 승인된 원격 이미지 URL의 표시만 확인한다. 실제 생성·동일 ID 수정 승인은 이 구체적 입력을 제시한 뒤 한 번에 받는다.
 
 ## 공통 확인 순서
 
