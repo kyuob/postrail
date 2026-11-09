@@ -4,7 +4,7 @@ Write once. Publish across your blogs.
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
 
-> **Status: offline CLI + KeyFlow + experimental Velog adapter.** KeyFlow is accepted by the user; additional KeyFlow acceptance testing is closed. Velog login, image upload and ID-based create/update are implemented and fixture-tested; live account validation is pending. Tistory and Blogger publishing are not implemented. No package has been released to a registry.
+> **Status: offline CLI + KeyFlow + experimental Velog/Tistory adapters.** KeyFlow is accepted by the user; additional KeyFlow acceptance testing is closed. Velog and Tistory have fixture-tested login, upload and ID-based create/update code; live account validation is pending. Tistory supports private/public posts, not draft slots. Blogger publishing is not implemented. No package has been released to a registry.
 
 ## Development
 
@@ -45,6 +45,10 @@ Use target ID `blogger` in project settings, article metadata, and `plan --to bl
 
 Run `node dist/cli.js velog check examples/velog.md --json` offline. Explicit `velog login --account USERNAME` uses a dedicated Chrome profile; `velog push ARTICLE --account USERNAME --confirm` sends the source's declared visibility. `status` reads only the local journal; `get` reads the saved remote ID. Original Markdown and images are preserved. Uncertain writes and remote edits block automatic resubmission. Read the [Velog guide](docs/velog.md) before authentication or upload. Run `bun run check:velog` for offline core and Velog fixture checks; these do not validate a real account.
 
+## Experimental Tistory adapter
+
+`node dist/cli.js tistory check examples/tistory.md --json` runs offline. Explicit `tistory login --blog NAME --blog-id ID` opens a dedicated Chrome profile. `tistory push ARTICLE --blog NAME --blog-id ID --confirm` creates or updates a saved post ID using Tistory's internal management interface. Markdown is rendered to HTML; uploads register platform attachment references. Draft input is rejected rather than converted to a private post. Read the [Tistory guide](docs/tistory.md) for exact commands, experimental schema limits and recovery. `bun run check:tistory` checks core, Velog and Tistory fixtures without account access. See the [bundled live validation plan](docs/bundled-validation.md) for the deferred account stage.
+
 ## Planned interface
 
 The following is a design proposal, **not an available command**:
@@ -53,7 +57,7 @@ The following is a design proposal, **not an available command**:
 postrail publish article.md --to velog,tistory,keyflow,blogger
 ```
 
-마크다운 하나로 여러 블로그에 발행하는 CLI입니다. KeyFlow는 사용자 확정으로 추가 검증을 종료했습니다. 벨로그는 전용 브라우저 로그인·이미지 업로드·생성·동일 ID 수정 코드를 구현하고 모의 응답 검사를 마쳤으며, 실계정 검증은 남아 있습니다. 티스토리·블로거 어댑터는 미구현입니다.
+마크다운 하나로 여러 블로그에 발행하는 CLI입니다. KeyFlow는 사용자 확정으로 추가 검증을 종료했습니다. 벨로그·티스토리는 전용 브라우저 로그인·이미지 업로드·생성·동일 ID 수정 코드를 구현하고 모의 응답 검사를 마쳤으며, 실계정 검증은 블로거 구현 후 묶어서 진행할 예정입니다. 티스토리의 임시저장 슬롯과 블로거 어댑터는 미구현입니다.
 
 ## Roadmap
 

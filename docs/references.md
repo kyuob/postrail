@@ -2,9 +2,11 @@
 
 조사일: 2026-11-10. GitHub 공개 API의 스타 수·저장소 정보와 아래 고정 커밋의 소스를 직접 확인했다. 상위 프로젝트 검색 범위는 `tistory`, `velog`, 각 플랫폼의 `publish`, `cli` 키워드다. 스킨·통계·클론·조회 전용 도구는 발행 참고 대상에서 제외했다. 전 세계 모든 저장소의 절대 순위를 보장하지 않는다. 한국어 README와 한국 블로그 생태계 대상 구현을 선정 근거로 사용했으며, 저자의 국적을 추정하지 않는다.
 
-아래 주요 4개 평가는 소스 조사 결과다. 해당 도구를 설치하거나 사용자의 쿠키·키체인을 읽지 않았으며, 실제 로그인·발행·수정·이미지 업로드 성공을 검증하지 않았다. 후속 구현 진척은 [KeyFlow 가이드](keyflow.md)와 [Velog 가이드](velog.md)를 따른다. Velog는 공식 v3 소스·공개 스키마 확인 후 실험적으로 구현했으며 실계정 검증은 남아 있다. 티스토리는 미구현이다.
+아래 주요 4개 평가는 소스 조사 결과다. 해당 도구를 설치하거나 사용자의 쿠키·키체인을 읽지 않았으며 실제 로그인·발행·수정·이미지 업로드 성공을 검증하지 않았다. 후속 진척은 [KeyFlow](keyflow.md), [Velog](velog.md), [Tistory](tistory.md) 가이드를 따른다. Velog/Tistory는 실험적 구현과 모의 응답 검사를 마쳤으며 실계정 검증은 남아 있다.
 
 ## 주요 참고 대상: 플랫폼별 2개
+
+최초 티스토리 2개는 과거 Open API의 역사적 참고로 유지한다. 현재 내부 API 구현 근거는 추가 조사한 [kim-se-hee/tistory-mcp](https://github.com/kim-se-hee/tistory-mcp/tree/bc9d258730ec9421aa2dfec749c720aa7599949f)다. 2026-06-15 갱신, MIT, 조사 시 8 stars. 생성 POST와 ID 경로 PUT 수정, 공개값 0/15/20, 별도 draft 슬롯, 이미지 첨부 참조 등록을 구분한다. [세부 근거와 구현 제약](tistory.md)을 따른다. 추가 공개 코드 [SeungMinK/tistory-autoposter](https://github.com/SeungMinK/tistory-autoposter/tree/e2a380e976ed7ea190a63acbc93e46ce82677cd1)는 2026-04-05 갱신이나 라이선스 미확인으로 코드를 채택하지 않았다. 공개 배포물 `@itapi-core/mcp-tistory@1.5.3`의 Config.entry 필드도 데이터 형식 참고로만 확인했다.
 
 | 플랫폼 | 저장소 | 스타 | 저장소 최종 push | 라이선스 확인 | 역할 |
 |---|---|---:|---|---|---|
