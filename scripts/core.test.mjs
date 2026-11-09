@@ -70,12 +70,15 @@ test("configuration precedence and target override remain offline", t => {
   assert.equal(override.article.visibility, "public");
   assert.equal(override.offline, true);
   assert.equal(override.ready, false);
-  assert(override.targets.every(p => !p.canPublish && p.status === "unverified"));
+  assert(override.targets.every(p => !p.canPublish));
+  assert.equal(override.targets.find(p => p.platform === "velog").status, "unverified");
+  assert.equal(override.targets.find(p => p.platform === "keyflow").status, "implemented");
+  assert.deepEqual(override.targets.find(p => p.platform === "keyflow").blockers, ["USE_KEYFLOW_SUBCOMMAND"]);
 });
 
 test("absent config uses defaults but explicit missing config fails", t => {
   const { json } = fixture(t);
-  assert.deepEqual(json("validate", "article.md").article.targets, ["velog", "tistory", "keyflow"]);
+  assert.deepEqual(json("validate", "article.md").article.targets, ["velog", "tistory", "keyflow", "blogger"]);
   assert.equal(json("validate", "article.md", "--config", "missing.json").error.code, "INVALID_CONFIG");
 });
 
@@ -83,6 +86,27 @@ test("broken default config symlink fails instead of silently using defaults", t
   const { dir, json } = fixture(t);
   symlinkSync(path.join(dir, "missing.json"), path.join(dir, "postrail.json"));
   assert.equal(json("validate", "article.md").error.code, "INVALID_CONFIG");
+});
+
+test("Blogger is accepted in metadata, --to and new config while its adapter stays blocked", t => {
+  const { dir, write, json } = fixture(t);
+  assert.equal(json("init").ok, true);
+  assert.deepEqual(JSON.parse(readFileSync(path.join(dir, "postrail.json"))).targets, ["velog", "tistory", "keyflow", "blogger"]);
+  write("article.md", header.replace("tags:", "targets: [blogger]\ntags:") + "구글 블로거로 보낼 원고");
+  assert.deepEqual(json("validate", "article.md").article.targets, ["blogger"]);
+  const plan = json("plan", "article.md", "--to", "velog,tistory,keyflow,blogger");
+  assert.equal(plan.ready, false);
+  assert.deepEqual(plan.targets.find(p => p.platform === "blogger"), {
+    platform: "blogger", visibility: "draft", status: "unverified", canPublish: false, blockers: ["ADAPTER_NOT_IMPLEMENTED"],
+  });
+  assert.deepEqual(json("plan", "article.md").article.targets, ["blogger"]);
+});
+
+test("existing explicit three-platform config is preserved after Blogger is added", t => {
+  const { write, json } = fixture(t);
+  write("postrail.json", JSON.stringify({ version: 1, targets: ["velog", "tistory", "keyflow"], visibility: "draft" }));
+  assert.deepEqual(json("plan", "article.md").article.targets, ["velog", "tistory", "keyflow"]);
+  assert.equal(json("plan", "article.md", "--to", "google-blogger").error.code, "INVALID_ARGUMENT");
 });
 
 for (const [name, content] of [

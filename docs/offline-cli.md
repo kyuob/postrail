@@ -1,6 +1,6 @@
 # 오프라인 CLI 사용법
 
-이 문서의 명령: `init`, `validate`, `preview`, `plan`, 도움말, 버전. 이 오프라인 명령은 인증 정보를 읽거나 네트워크 요청을 하지 않는다. 별도의 실험적 [KeyFlow 명령](keyflow.md)은 로그인·전송 기능을 제공한다. 텍스트 비공개 초안 생성·수정은 실검증했고 이미지·발행·새 로그인 검증은 남아 있다.
+이 문서의 명령: `init`, `validate`, `preview`, `plan`, 도움말, 버전. 이 오프라인 명령은 인증 정보를 읽거나 네트워크 요청을 하지 않는다. 별도 [KeyFlow 명령](keyflow.md)은 로그인·전송 기능을 제공하며 기존 스킬 활용을 바탕으로 사용자 확정한 연동이다. 추가 KeyFlow 검증은 종료했다.
 
 ## 실행
 
@@ -11,7 +11,7 @@ bun install --frozen-lockfile
 bun run build
 node dist/cli.js validate examples/article.md
 node dist/cli.js preview examples/article.md --output preview.html
-node dist/cli.js plan examples/article.md --to velog,tistory,keyflow --json
+node dist/cli.js plan examples/article.md --to velog,tistory,keyflow,blogger --json
 ```
 
 명령 예시의 `node dist/cli.js`가 배포 후 `postrail` 실행 파일에 해당한다. 패키지는 아직 레지스트리에 발행하지 않았다. `preview.html`은 브라우저에서 직접 열 수 있으며, 이미 존재하면 새 출력 경로를 사용해야 한다. 브라우저를 자동 실행하지 않는다.
@@ -23,12 +23,12 @@ node dist/cli.js plan examples/article.md --to velog,tistory,keyflow --json
 ```json
 {
   "version": 1,
-  "targets": ["velog", "tistory", "keyflow"],
+  "targets": ["velog", "tistory", "keyflow", "blogger"],
   "visibility": "draft"
 }
 ```
 
-원고 명령은 현재 작업 디렉터리의 `postrail.json`만 읽는다. 상위 폴더를 검색하지 않는다. 기본 설정 파일이 없으면 위 기본값을 사용한다. `--config <file>`을 명시했는데 파일이 없거나 잘못되면 오류다. 설정은 위 세 필드를 모두 요구하며 알 수 없는 필드는 거부한다.
+원고 명령은 현재 작업 디렉터리의 `postrail.json`만 읽는다. 상위 폴더를 검색하지 않는다. 기본 설정 파일이 없으면 위 기본값을 사용한다. 기존 설정에 명시한 대상 목록은 자동으로 늘리지 않는다. `--config <file>`을 명시했는데 파일이 없거나 잘못되면 오류다. 설정은 위 세 필드를 모두 요구하며 알 수 없는 필드는 거부한다.
 
 우선순위: `plan --to` → 원고의 `targets` → 설정의 `targets`. 공개 상태는 원고의 `visibility` → 설정의 `visibility` 순이다. 다른 명령에서는 `--to`를 받지 않는다. 명령 옵션으로 공개 상태를 바꾸지 않는다.
 
@@ -42,7 +42,7 @@ id: first-post
 title: 첫 번째 개발 기록
 tags: [개발, CLI]
 visibility: draft
-targets: [velog, tistory, keyflow]
+targets: [velog, tistory, keyflow, blogger]
 ---
 본문을 작성합니다.
 ```
@@ -53,7 +53,7 @@ targets: [velog, tistory, keyflow]
 | title | 예 | 비어 있지 않은 한 줄, 최대 200 UTF-16 코드 단위 |
 | tags | 아니요 | 중복 없는 문자열 배열, 최대 30개, 각각 최대 100 UTF-16 코드 단위. 생략 시 빈 배열 |
 | visibility | 아니요 | draft/private/public. 플랫폼이 세 상태를 모두 지원한다는 뜻은 아님 |
-| targets | 아니요 | velog/tistory/keyflow 중 중복 없는 비어 있지 않은 배열 |
+| targets | 아니요 | velog/tistory/keyflow/blogger 중 중복 없는 비어 있지 않은 배열 |
 
 선택 필드를 쓸 때 `null`은 허용하지 않는다. 본문도 비어 있으면 안 된다. 원고는 최대 2 MiB, frontmatter는 최대 32,768 UTF-16 코드 단위, 설정은 최대 64 KiB다.
 
@@ -83,7 +83,7 @@ targets: [velog, tistory, keyflow]
 
 주요 오류 코드: `INVALID_ARGUMENT`, `UNSUPPORTED_COMMAND`, `INVALID_CONFIG`, `INVALID_METADATA`, `INVALID_ARTICLE`, `INVALID_IMAGE`, `READ_FAILED`, `FILE_EXISTS`, `WRITE_FAILED`, `INTERNAL_ERROR`.
 
-`plan`의 `ok: true`와 종료 코드 0은 계획을 정상 작성했다는 뜻이다. 현재 모든 대상은 `ready: false`, `canPublish: false`, `status: unverified`다. 벨로그·티스토리의 blocker는 `ADAPTER_NOT_IMPLEMENTED`, KeyFlow는 `LIVE_NOT_VERIFIED`다. 발행 성공을 의미하지 않는다. `preview --json`은 HTML을 `html` 필드에 담고, `--output`과 함께 쓰면 HTML 대신 출력 경로를 반환한다.
+`plan`의 `ok: true`와 종료 코드 0은 계획을 정상 작성했다는 뜻이다. 다중 발행 명령이 아직 없으므로 `ready: false`이며 각 계획의 `canPublish`도 false다. 벨로그·티스토리·블로거는 `status: unverified`, blocker `ADAPTER_NOT_IMPLEMENTED`다. KeyFlow는 `status: implemented`, blocker `USE_KEYFLOW_SUBCOMMAND`이며 별도 `keyflow push` 명령으로 사용한다. KeyFlow 추가 검증을 요구하는 차단 조건은 제거했다. 계획 생성은 발행 성공을 의미하지 않는다. `preview --json`은 HTML을 `html` 필드에 담고, `--output`과 함께 쓰면 HTML 대신 출력 경로를 반환한다.
 
 ## 검증 범위
 

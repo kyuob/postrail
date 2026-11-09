@@ -1,8 +1,8 @@
-# KeyFlow adapter (experimental)
+# KeyFlow adapter
 
 Postrail delegates to the official `@keyflow-blog/cli`, pinned to **2026.10.20** in package.json and bun.lock. Development installed it with Bun and skipped install hooks. This adapter does not implement authentication or private HTTP APIs itself. Postrail's own source Markdown is never passed to the upstream write command.
 
-Implementation and offline contract tests are complete. **An approved live test created one text-only private draft using an existing saved session, skipped unchanged content, and updated the same ID; the workspace and marker were checked in the browser.** See [results and limits](live-validation.md). Automated unit-test uploads remain simulated. Live image upload, publication, and a fresh interactive login are still unverified; the stable multi-platform `plan` therefore keeps KeyFlow unverified with `LIVE_NOT_VERIFIED`.
+KeyFlow is accepted by the user based on their existing skill workflow. **Additional KeyFlow acceptance verification is closed and is not a remaining release gate.** The earlier approved test created one text-only private draft using an existing session, skipped unchanged content, and updated the same ID; the workspace and marker were checked in the browser. See [historical results and limits](live-validation.md). This decision does not invent test results for other features. Multi-platform `plan` reports `implemented` with `USE_KEYFLOW_SUBCOMMAND`; use the existing `keyflow push` route.
 
 ## Commands
 
@@ -56,7 +56,7 @@ State lives under the current project's ignored `.postrail/keyflow/<hash>/state.
 - A narrowly classified rejection before sending, such as no saved login, records `failed` and permits retry after repair.
 - Timeout, malformed output, changed state, partial save or unexpected URL records `unknown`. Unresolved `pending`/`unknown` states block another write. A known partial-save ID is retained when provided by upstream.
 - A leftover lock blocks writes. There is no automatic stale-lock removal. Check whether a process is still running and inspect the remote workspace before manually removing a lock.
-- `status` only reports local bookkeeping. It does not confirm that a remote post still exists or is unchanged. `liveVerified: false` describes this release's incomplete live capability coverage, including untested images and publication. It does not negate the scoped private-draft acceptance results.
+- `status` only reports local bookkeeping. It does not confirm that a remote post still exists or is unchanged. The historical `liveVerified: false` output describes the original test coverage, not the user's acceptance decision. It is not a verification gate and does not prevent the KeyFlow command from running.
 
 Unknown-outcome reconciliation and remote conflict checks remain stage 6 work. Do not reset unknown state or erase the journal to force another create. The adapter does not promise exactly-once delivery across machine failures, manual state changes or multiple project copies.
 
@@ -73,4 +73,4 @@ Primary evidence checked on 2026-11-10:
 - Installed `dist/index.js`, `commands/push.js`, `commands/login.js`, `post/resolve-post.js`, `post/upload-post.js`, and image collector/rewriter were inspected. Runtime source was tested instead of assuming the repository's newest README always matches a published version.
 - The package metadata declares ISC, while its included LICENSE text says MIT. Both facts are recorded in [third-party notices](third-party-notices.md); Postrail preserves the distributed license text and does not relabel it.
 
-The live acceptance above covered only the approved text draft and existing connection. Obtain explicit approval before additional account/content tests; new interactive login, images, private publication and public publication require their own scoped evidence. A returned management URL was observed to be stale; use the website's Manage → Library navigation if it opens as 404. Public publication requires separate explicit authorization.
+The historical live acceptance above covered only the approved text draft and existing connection. Per the user's decision, do not initiate additional KeyFlow verification unless the user reopens that work. A returned management URL was observed to be stale; use the website's Manage → Library navigation if it opens as 404. Actual new uploads/publication still require authorization for their content and destination.

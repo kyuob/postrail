@@ -2,6 +2,8 @@
 
 Date: 2026-11-10 (Asia/Seoul). Tested against the pinned official CLI 2026.10.20 and the existing signed-in KeyFlow service.
 
+Subsequent user decision: KeyFlow is already relied on through an existing skill workflow. Additional KeyFlow verification is closed; the historical facts and limits below are retained as evidence, not as requirements for more testing. The manual script below is not a next action unless the user explicitly reopens verification.
+
 The human explicitly approved creating **one private draft from examples/article.md and updating that same post**. The official CLI reported one saved active account, which was selected explicitly. No new authentication flow was needed. No other article was changed, and no public publication or deletion was performed.
 
 ## Results

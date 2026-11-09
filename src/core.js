@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { parseDocument } from "yaml";
 import MarkdownIt from "markdown-it";
 
-export const PLATFORMS = ["velog", "tistory", "keyflow"];
+export const PLATFORMS = ["velog", "tistory", "keyflow", "blogger"];
 export class UserError extends Error {
   constructor(code, message) { super(message); this.code = code; }
 }
@@ -40,7 +40,7 @@ function keys(value, allowed, code) {
 }
 export function targets(value, code = "INVALID_METADATA") {
   if (!Array.isArray(value) || !value.length || value.some(p => !PLATFORMS.includes(p)) || new Set(value).size !== value.length) {
-    fail(code, "Targets must be a nonempty list of unique platforms: velog, tistory, keyflow.");
+    fail(code, "Targets must be a nonempty list of unique platforms: velog, tistory, keyflow, blogger.");
   }
   return value;
 }

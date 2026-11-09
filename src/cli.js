@@ -15,7 +15,7 @@ Usage:
   postrail init [--json]
   postrail validate <article.md> [--config <file>] [--json]
   postrail preview <article.md> [--output <new.html>] [--config <file>] [--json]
-  postrail plan <article.md> [--to velog,tistory,keyflow] [--config <file>] [--json]
+  postrail plan <article.md> [--to velog,tistory,keyflow,blogger] [--config <file>] [--json]
   postrail keyflow check <article.md> [--config <file>] [--json]
   postrail keyflow login --account <name>
   postrail keyflow status <article.md> --account <name> [--json]
@@ -27,8 +27,8 @@ init/validate/preview/plan and keyflow check/status are offline.
 KeyFlow login opens a browser; keyflow push sends content after --confirm.
 Preview prints HTML unless --output is given.
 Existing files are never overwritten. --json returns structured results/errors.
-Verified platform publishing is not available yet. KeyFlow uploads are experimental.
-Plans report unverified adapters; Velog/Tistory publishing is not implemented.`;
+Multi-platform publishing is not available yet. KeyFlow uses its official CLI.
+Velog/Tistory/Blogger publishing is not implemented; use KeyFlow subcommands for KeyFlow.`;
 
 function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };
@@ -61,7 +61,7 @@ function main() {
     if (json) console.log(JSON.stringify(result));
     else if (result.command === "keyflow push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `KeyFlow ${result.status} (${result.visibility}): ${result.postId}${result.url ? `\n${result.url}` : ""}`);
     else if (result.command === "keyflow status") console.log(`Local KeyFlow state: ${result.state.status}${result.state.postId ? ` (${result.state.postId})` : ""}`);
-    else console.log(`${result.command}: complete. Full live capability validation is still pending.`);
+    else console.log(`${result.command}: complete.`);
     return;
   }
   const { command, file, options } = parse();
@@ -85,7 +85,7 @@ function main() {
     }
     if (command === "plan") {
       result.ready = false;
-      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: "unverified", canPublish: false, blockers: [platform === "keyflow" ? "LIVE_NOT_VERIFIED" : "ADAPTER_NOT_IMPLEMENTED"] }));
+      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: platform === "keyflow" ? "implemented" : "unverified", canPublish: false, blockers: [platform === "keyflow" ? "USE_KEYFLOW_SUBCOMMAND" : "ADAPTER_NOT_IMPLEMENTED"] }));
     }
   }
   if (json) console.log(JSON.stringify(result));
@@ -93,7 +93,9 @@ function main() {
   else {
     console.log(`${command === "validate" ? "Valid" : command === "preview" ? "Preview saved" : "Offline plan"}: ${result.article.title}`);
     if (result.output) console.log(result.output);
-    if (result.targets) for (const target of result.targets) console.log(`  ${target.platform}: ${target.visibility}, unverified — publishing unavailable`);
+    if (result.targets) for (const target of result.targets) console.log(target.platform === "keyflow"
+      ? `  keyflow: ${target.visibility}, implemented — use postrail keyflow push`
+      : `  ${target.platform}: ${target.visibility}, unverified — publishing unavailable`);
     for (const warning of result.article.warnings) console.log(`Warning: ${warning}`);
   }
 }
