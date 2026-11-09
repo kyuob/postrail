@@ -1,6 +1,6 @@
 # Postrail v0.1.0 개발 계획
 
-목표: Markdown 파일 하나를 Velog·Tistory·KeyFlow로 보내고, 결과를 추적하여 수정·부분 실패 복구까지 제공하는 CLI. 현재 오프라인 init/validate/preview/plan과 실험적 KeyFlow check/login/push/status를 제공한다. [오프라인 사용법](offline-cli.md), [KeyFlow 사용법](keyflow.md). KeyFlow 실계정 검증, 벨로그·티스토리 어댑터와 다중 플랫폼 복구는 미완료다.
+목표: Markdown 파일 하나를 Velog·Tistory·KeyFlow로 보내고, 결과를 추적하여 수정·부분 실패 복구까지 제공하는 CLI. 현재 오프라인 init/validate/preview/plan과 실험적 KeyFlow check/login/push/status를 제공한다. [오프라인 사용법](offline-cli.md), [KeyFlow 사용법](keyflow.md). KeyFlow 텍스트 비공개 초안 생성·수정은 실검증했고, 이미지·발행·새 로그인과 벨로그·티스토리 어댑터·다중 플랫폼 복구는 미완료다.
 
 ## 진행 상태
 
@@ -10,7 +10,7 @@
 | 1A. 오픈소스 조사 | 완료 | 플랫폼별 2개 소스·고정 커밋·라이선스·제약 기록: [분석](references.md) |
 | 1B. 플랫폼 실동작 검증 | 대기 | 계정 확인, 테스트 원고 생성·조회·수정·이미지·공개 상태 증거 |
 | 2. 공통 원고·오프라인 CLI | 구현 완료 | init/validate/preview/plan을 네트워크 없이 실행. Node CLI 검사·파일 보호·HTML 렌더링·오류 계약 검증 |
-| 3. KeyFlow 어댑터 | 구현·오프라인 검사 완료, 실계정 대기 | 공식 배포본 계약·상태 변환·이미지 사본·인증 위임·업로드/ID 기반 수정 경로 구현. 생성·원격 확인·수정 실증은 미완료: [가이드](keyflow.md) |
+| 3. KeyFlow 어댑터 | 구현·텍스트 비공개 초안 생성/수정 실검증 완료, 기타 기능 대기 | 같은 글 ID 생성·수정, 원본 보존, 무변경 건너뛰기와 원격 UI 확인. 이미지·발행·새 로그인 실증은 미완료: [검증 결과](live-validation.md) |
 | 4. Velog 어댑터 | 대기 | 현재 mutation 규격 검증 후 인증·생성·이미지·수정 검증 |
 | 5. Tistory 어댑터 | 대기 | 전용 브라우저 로그인·세션·에디터·이미지·수정 검증 |
 | 6. 다중 전송·복구 | 대기 | 부분 성공 보존, unknown 처리, ID 기반 수정, 동시 실행 방지 |

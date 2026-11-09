@@ -61,7 +61,7 @@ function main() {
     if (json) console.log(JSON.stringify(result));
     else if (result.command === "keyflow push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `KeyFlow ${result.status} (${result.visibility}): ${result.postId}${result.url ? `\n${result.url}` : ""}`);
     else if (result.command === "keyflow status") console.log(`Local KeyFlow state: ${result.state.status}${result.state.postId ? ` (${result.state.postId})` : ""}`);
-    else console.log(`${result.command}: complete. Live platform validation is still pending.`);
+    else console.log(`${result.command}: complete. Full live capability validation is still pending.`);
     return;
   }
   const { command, file, options } = parse();
