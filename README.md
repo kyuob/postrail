@@ -32,6 +32,7 @@ postrail publish article.md --to velog,tistory,keyflow
 ## Roadmap
 
 - [x] Standalone CLI scaffold and GitHub CI
+- [x] Inspect two publishing references per platform for Velog and Tistory
 - [ ] Confirm each platform's supported publishing and authentication methods
 - [ ] Define Markdown input and article metadata
 - [ ] Implement per-platform adapters with explicit capability reporting
@@ -40,6 +41,8 @@ postrail publish article.md --to velog,tistory,keyflow
 - [ ] Document installation and publish the first usable release
 
 Platform support is a goal, not a claim that every platform currently exposes a suitable public API. Document limitations before implementing a connector.
+
+See the [implementation roadmap](docs/roadmap.md) and [source reference assessment](docs/references.md) for staged acceptance criteria and current integration limitations. Source inspection is complete; live platform verification is still pending.
 
 ## Contributing
 
