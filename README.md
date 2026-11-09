@@ -4,7 +4,7 @@ Write once. Publish across your blogs.
 
 Postrail is an open-source CLI project for publishing Markdown articles to **Velog, Tistory, and KeyFlow**.
 
-> **Status: offline CLI available.** Initialize a project, validate Markdown articles, render local previews, and inspect publishing plans. Platform authentication and publishing are not implemented yet. No package has been released to a registry.
+> **Status: offline CLI + experimental KeyFlow adapter.** Initialize a project, validate Markdown articles, render local previews, and inspect publishing plans. KeyFlow check/login/upload integration is implemented and tested offline; real-account validation is still pending. Velog and Tistory publishing are not implemented yet. No package has been released to a registry.
 
 ## Development
 
@@ -31,6 +31,10 @@ node dist/cli.js plan examples/article.md --to velog,tistory,keyflow --json
 
 All four commands support `--json`. See the [offline CLI guide](docs/offline-cli.md) for the article format, limits, configuration precedence, and exit codes. A successful plan means the plan was created; it does not mean publishing is available.
 
+## Experimental KeyFlow adapter
+
+`node dist/cli.js keyflow check examples/article.md --json` runs the pinned official CLI's actual offline dry-run. Explicit `keyflow login`, `keyflow push --account <name> --confirm`, and local `keyflow status` commands are also implemented. Uploads preserve the source article, keep a local post ID journal, and block automatic retry after an uncertain result. See the [KeyFlow guide](docs/keyflow.md) before using commands that authenticate or send content.
+
 ## Planned interface
 
 The following is a design proposal, **not an available command**:
@@ -39,7 +43,7 @@ The following is a design proposal, **not an available command**:
 postrail publish article.md --to velog,tistory,keyflow
 ```
 
-마크다운 하나로 여러 블로그에 발행하는 CLI입니다. 현재는 원고 검증·로컬 미리보기·발행 계획을 제공하며, 실제 로그인·글 발행 기능은 아직 제공하지 않습니다.
+마크다운 하나로 여러 블로그에 발행하는 CLI입니다. 원고 검증·로컬 미리보기·발행 계획과 실험적 KeyFlow 연동을 제공합니다. KeyFlow 실계정 검증은 아직 진행하지 않았으며 벨로그·티스토리 발행은 미구현입니다.
 
 ## Roadmap
 
@@ -48,6 +52,7 @@ postrail publish article.md --to velog,tistory,keyflow
 - [ ] Confirm each platform's supported publishing and authentication methods
 - [x] Define Markdown input and article metadata
 - [ ] Implement per-platform adapters with explicit capability reporting
+- [x] Experimental KeyFlow adapter with official offline contract tests (live verification pending)
 - [x] Offline preview and publishing plan (all adapters remain unverified)
 - [ ] Track publication results to support updates without duplicate posts
 - [ ] Document installation and publish the first usable release

@@ -25,10 +25,11 @@
     "dev": "bun src/cli.js",
     "build": "bun build src/cli.js --target=node --outdir=dist",
     "smoke": "bun scripts/smoke.mjs",
-    "test": "node --test scripts/core.test.mjs",
+    "test": "node --test scripts/core.test.mjs scripts/keyflow.test.mjs",
     "check": "bun run build && bun run smoke && bun run test"
   },
   "dependencies": {
+    "@keyflow-blog/cli": "2026.10.20",
     "markdown-it": "15.0.3",
     "yaml": "2.9.1"
   }

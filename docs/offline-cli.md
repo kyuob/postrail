@@ -1,6 +1,6 @@
 # 오프라인 CLI 사용법
 
-현재 제공: `init`, `validate`, `preview`, `plan`, 도움말, 버전. 로그인·발행·수정 어댑터는 아직 없다. 모든 원고 명령은 인증 정보를 읽거나 네트워크 요청을 하지 않는다.
+이 문서의 명령: `init`, `validate`, `preview`, `plan`, 도움말, 버전. 이 오프라인 명령은 인증 정보를 읽거나 네트워크 요청을 하지 않는다. 별도의 실험적 [KeyFlow 명령](keyflow.md)은 로그인·전송 기능을 제공하며 실계정 검증 대기 상태다.
 
 ## 실행
 
@@ -83,7 +83,7 @@ targets: [velog, tistory, keyflow]
 
 주요 오류 코드: `INVALID_ARGUMENT`, `UNSUPPORTED_COMMAND`, `INVALID_CONFIG`, `INVALID_METADATA`, `INVALID_ARTICLE`, `INVALID_IMAGE`, `READ_FAILED`, `FILE_EXISTS`, `WRITE_FAILED`, `INTERNAL_ERROR`.
 
-`plan`의 `ok: true`와 종료 코드 0은 계획을 정상 작성했다는 뜻이다. 현재 모든 대상은 `ready: false`, `canPublish: false`, `status: unverified`, `blockers: [ADAPTER_NOT_IMPLEMENTED]`다. 발행 성공을 의미하지 않는다. `preview --json`은 HTML을 `html` 필드에 담고, `--output`과 함께 쓰면 HTML 대신 출력 경로를 반환한다.
+`plan`의 `ok: true`와 종료 코드 0은 계획을 정상 작성했다는 뜻이다. 현재 모든 대상은 `ready: false`, `canPublish: false`, `status: unverified`다. 벨로그·티스토리의 blocker는 `ADAPTER_NOT_IMPLEMENTED`, KeyFlow는 `LIVE_NOT_VERIFIED`다. 발행 성공을 의미하지 않는다. `preview --json`은 HTML을 `html` 필드에 담고, `--output`과 함께 쓰면 HTML 대신 출력 경로를 반환한다.
 
 ## 검증 범위
 

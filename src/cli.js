@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { UserError, fail, initialize, loadConfig, loadArticle, targets, summary, preview, writeNew } from "./core.js";
+import { keyflowCommand } from "./keyflow-command.js";
 
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -15,12 +16,19 @@ Usage:
   postrail validate <article.md> [--config <file>] [--json]
   postrail preview <article.md> [--output <new.html>] [--config <file>] [--json]
   postrail plan <article.md> [--to velog,tistory,keyflow] [--config <file>] [--json]
+  postrail keyflow check <article.md> [--config <file>] [--json]
+  postrail keyflow login --account <name>
+  postrail keyflow status <article.md> --account <name> [--json]
+  postrail keyflow push <article.md> --account <name> --confirm [--json]
   postrail --help
   postrail --version
 
-All article commands are offline. Preview prints HTML unless --output is given.
+init/validate/preview/plan and keyflow check/status are offline.
+KeyFlow login opens a browser; keyflow push sends content after --confirm.
+Preview prints HTML unless --output is given.
 Existing files are never overwritten. --json returns structured results/errors.
-Platform publishing is not available yet. Plans report unverified adapters.`;
+Verified platform publishing is not available yet. KeyFlow uploads are experimental.
+Plans report unverified adapters; Velog/Tistory publishing is not implemented.`;
 
 function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };
@@ -48,6 +56,14 @@ function parse() {
 }
 
 function main() {
+  if (args[0] === "keyflow") {
+    const result = keyflowCommand(args.slice(1));
+    if (json) console.log(JSON.stringify(result));
+    else if (result.command === "keyflow push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `KeyFlow ${result.status} (${result.visibility}): ${result.postId}${result.url ? `\n${result.url}` : ""}`);
+    else if (result.command === "keyflow status") console.log(`Local KeyFlow state: ${result.state.status}${result.state.postId ? ` (${result.state.postId})` : ""}`);
+    else console.log(`${result.command}: complete. Live platform validation is still pending.`);
+    return;
+  }
   const { command, file, options } = parse();
   if (command === "help") return console.log(help);
   if (command === "version") return console.log(version);
@@ -69,7 +85,7 @@ function main() {
     }
     if (command === "plan") {
       result.ready = false;
-      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: "unverified", canPublish: false, blockers: ["ADAPTER_NOT_IMPLEMENTED"] }));
+      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: "unverified", canPublish: false, blockers: [platform === "keyflow" ? "LIVE_NOT_VERIFIED" : "ADAPTER_NOT_IMPLEMENTED"] }));
     }
   }
   if (json) console.log(JSON.stringify(result));
@@ -85,7 +101,7 @@ function main() {
 try { main(); }
 catch (error) {
   const code = error instanceof UserError ? error.code : "INTERNAL_ERROR";
-  const message = error instanceof UserError ? error.message : "Unexpected failure. No content was uploaded.";
+  const message = error instanceof UserError ? error.message : "Unexpected failure. Check local and remote results before retrying an upload.";
   const output = json ? JSON.stringify({ ok: false, error: { code, message } }) : `${code}: ${message}`;
   (json ? process.stdout : process.stderr).write(output + "\n");
   process.exitCode = 1;
