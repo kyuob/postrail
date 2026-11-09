@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { UserError, fail, initialize, loadConfig, loadArticle, targets, summary, preview, writeNew } from "./core.js";
 import { keyflowCommand } from "./keyflow-command.js";
+import { velogCommand } from "./velog-command.js";
 
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -20,15 +21,21 @@ Usage:
   postrail keyflow login --account <name>
   postrail keyflow status <article.md> --account <name> [--json]
   postrail keyflow push <article.md> --account <name> --confirm [--json]
+  postrail velog check <article.md> [--config <file>] [--json]
+  postrail velog login --account <username>
+  postrail velog status <article.md> --account <username> [--json]
+  postrail velog get <article.md> --account <username> [--json]
+  postrail velog push <article.md> --account <username> --confirm [--json]
   postrail --help
   postrail --version
 
-init/validate/preview/plan and keyflow check/status are offline.
+init/validate/preview/plan and keyflow/velog check/status are offline.
 KeyFlow login opens a browser; keyflow push sends content after --confirm.
 Preview prints HTML unless --output is given.
 Existing files are never overwritten. --json returns structured results/errors.
 Multi-platform publishing is not available yet. KeyFlow uses its official CLI.
-Velog/Tistory/Blogger publishing is not implemented; use KeyFlow subcommands for KeyFlow.`;
+Velog integration is experimental; live account validation is pending.
+Tistory/Blogger publishing is not implemented; use per-platform subcommands.`;
 
 function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };
@@ -55,7 +62,16 @@ function parse() {
   return { command, file, options };
 }
 
-function main() {
+async function main() {
+  if (args[0] === "velog") {
+    const result = await velogCommand(args.slice(1));
+    if (json) console.log(JSON.stringify(result));
+    else if (result.command === "velog status") console.log(`Local Velog state: ${result.state.status}`);
+    else if (result.command === "velog push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Velog ${result.visibility}: ${result.postId}\n${result.url}`);
+    else if (result.command === "velog get") console.log(`Velog ${result.visibility}: ${result.postId}; matches last saved: ${result.matchesLastSaved}`);
+    else console.log(`${result.command}: complete.`);
+    return;
+  }
   if (args[0] === "keyflow") {
     const result = keyflowCommand(args.slice(1));
     if (json) console.log(JSON.stringify(result));
@@ -85,7 +101,7 @@ function main() {
     }
     if (command === "plan") {
       result.ready = false;
-      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: platform === "keyflow" ? "implemented" : "unverified", canPublish: false, blockers: [platform === "keyflow" ? "USE_KEYFLOW_SUBCOMMAND" : "ADAPTER_NOT_IMPLEMENTED"] }));
+      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: platform === "keyflow" ? "implemented" : "unverified", canPublish: false, blockers: platform === "keyflow" ? ["USE_KEYFLOW_SUBCOMMAND"] : platform === "velog" ? ["LIVE_NOT_VERIFIED", "USE_VELOG_SUBCOMMAND"] : ["ADAPTER_NOT_IMPLEMENTED"] }));
     }
   }
   if (json) console.log(JSON.stringify(result));
@@ -100,7 +116,7 @@ function main() {
   }
 }
 
-try { main(); }
+try { await main(); }
 catch (error) {
   const code = error instanceof UserError ? error.code : "INTERNAL_ERROR";
   const message = error instanceof UserError ? error.message : "Unexpected failure. Check local and remote results before retrying an upload.";

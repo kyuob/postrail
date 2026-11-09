@@ -4,7 +4,7 @@ Write once. Publish across your blogs.
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
 
-> **Status: offline CLI + KeyFlow adapter.** Initialize a project, validate Markdown articles, render local previews, and inspect publishing plans. KeyFlow is accepted by the user based on the existing skill workflow and the scoped private-draft test; additional KeyFlow acceptance testing is closed. Velog, Tistory, and Blogger publishing are not implemented yet. No package has been released to a registry.
+> **Status: offline CLI + KeyFlow + experimental Velog adapter.** KeyFlow is accepted by the user; additional KeyFlow acceptance testing is closed. Velog login, image upload and ID-based create/update are implemented and fixture-tested; live account validation is pending. Tistory and Blogger publishing are not implemented. No package has been released to a registry.
 
 ## Development
 
@@ -41,6 +41,10 @@ See [live acceptance results and limits](docs/live-validation.md) for the scoped
 
 Use target ID `blogger` in project settings, article metadata, and `plan --to blogger`. See the [Blogger integration plan](docs/blogger.md) and [example article](examples/blogger.md). This is target registration and planning only; Google OAuth and the Blogger API adapter are not implemented.
 
+## Experimental Velog adapter
+
+Run `node dist/cli.js velog check examples/velog.md --json` offline. Explicit `velog login --account USERNAME` uses a dedicated Chrome profile; `velog push ARTICLE --account USERNAME --confirm` sends the source's declared visibility. `status` reads only the local journal; `get` reads the saved remote ID. Original Markdown and images are preserved. Uncertain writes and remote edits block automatic resubmission. Read the [Velog guide](docs/velog.md) before authentication or upload. Run `bun run check:velog` for offline core and Velog fixture checks; these do not validate a real account.
+
 ## Planned interface
 
 The following is a design proposal, **not an available command**:
@@ -49,7 +53,7 @@ The following is a design proposal, **not an available command**:
 postrail publish article.md --to velog,tistory,keyflow,blogger
 ```
 
-마크다운 하나로 여러 블로그에 발행하는 CLI입니다. KeyFlow는 기존 스킬 활용과 비공개 초안 실검증을 바탕으로 사용자 확정한 연동이며 추가 검증은 종료했습니다. 벨로그·티스토리·구글 블로거도 대상으로 등록돼 있으나 발행 어댑터는 미구현입니다.
+마크다운 하나로 여러 블로그에 발행하는 CLI입니다. KeyFlow는 사용자 확정으로 추가 검증을 종료했습니다. 벨로그는 전용 브라우저 로그인·이미지 업로드·생성·동일 ID 수정 코드를 구현하고 모의 응답 검사를 마쳤으며, 실계정 검증은 남아 있습니다. 티스토리·블로거 어댑터는 미구현입니다.
 
 ## Roadmap
 
