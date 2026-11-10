@@ -2,6 +2,7 @@ import { fail } from './core.js';
 import { tistoryTarget, withTistorySession } from './tistory-client.js';
 import { hash, journalPath, readJournal, saveJournal, locked } from './tistory-storage.js';
 import { attachment, renderTistory, canonicalHtml } from './tistory-format.js';
+import { equivalentTags } from './tags.js';
 
 function validateTarget(target) {
   const expected = tistoryTarget(target?.blog, target?.blogId);
@@ -32,6 +33,7 @@ function verifyPost(post, id) {
   return post;
 }
 const remoteHash = post => hash(post.editor);
+const formatVersion = 'paragraph-spacing-1';
 export function checkTistory(article) {
   checkArticle(article);
   return { ok: true, command: 'tistory check', offline: true, articleId: article.meta.id, visibility: article.meta.visibility,
@@ -71,9 +73,9 @@ export async function pushTistory(article, target, cwd, confirmed, session = wit
       if (old) {
         current = verifyPost(await client.read(old.postId), old.postId);
         if (remoteHash(current) !== old.remoteHash) fail('TISTORY_REMOTE_CONFLICT', 'The remote editor state changed outside Postrail. Resolve it before updating.');
-        if (old.contentHash === article.contentHash) return { ok: true, command: 'tistory push', skipped: true, postId: old.postId, liveVerified: false };
+        if (old.contentHash === article.contentHash && old.formatVersion === formatVersion) return { ok: true, command: 'tistory push', skipped: true, postId: old.postId, liveVerified: false };
       }
-      const state = { version: 1, blog: target.blog, blogId: target.blogId, articleId: article.meta.id, contentHash: article.contentHash, postId: old?.postId, status: 'pending' };
+      const state = { version: 1, blog: target.blog, blogId: target.blogId, articleId: article.meta.id, contentHash: article.contentHash, formatVersion, postId: old?.postId, status: 'pending' };
       saveJournal(file, state);
       try {
         const uploaded = new Map();
@@ -93,7 +95,7 @@ export async function pushTistory(article, target, cwd, confirmed, session = wit
         state.postId = saved.postId; saveJournal(file, state);
         const post = verifyPost(await client.read(saved.postId), saved.postId);
         if (post.title !== input.title || canonicalHtml(post.content) !== canonicalHtml(content) || post.visibility !== input.visibility || post.category !== input.category
-          || JSON.stringify([...post.tags].sort()) !== JSON.stringify([...article.meta.tags].sort()) || current && post.slogan !== input.slogan)
+          || !equivalentTags(post.tags, article.meta.tags) || current && post.slogan !== input.slogan)
           fail('TISTORY_READBACK_FAILED', 'The editor readback differs from the requested content or state.');
         for (const key of ['uselessMarginForEntry', 'cclCommercial', 'cclDerive']) {
           if (current && post.editorOptions?.[key] !== input[key]) fail('TISTORY_READBACK_FAILED', 'An existing editor option was not preserved.');

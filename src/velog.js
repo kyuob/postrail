@@ -2,6 +2,7 @@ import { fail } from "./core.js";
 import { digest, journalPath, readJournal, saveJournal, locked } from "./velog-journal.js";
 import { velogAccount, withVelogSession } from "./velog-client.js";
 import { velogImages, replaceVelogImages } from "./velog-images.js";
+import { equivalentTags } from './tags.js';
 
 function flags(article) { return { is_temp: article.meta.visibility === "draft", is_private: article.meta.visibility !== "public" }; }
 function validateUser(user, account) {
@@ -84,7 +85,8 @@ export async function pushVelog(article, account, cwd, confirmed, session = with
         const intended = { ...saved, title: input.title, body, tags: input.tags, ...flags(article),
           ...(current ? { url_slug: input.url_slug, thumbnail: input.thumbnail, short_description: input.meta.short_description,
             series: input.series_id ? { id: input.series_id } : null } : {}) };
-        if (actual.id !== saved.id || remoteHash(actual) !== remoteHash(intended)) fail("VELOG_READBACK_FAILED", "Velog's readback does not match the intended content and state.");
+        if (actual.id !== saved.id || !equivalentTags(actual.tags, intended.tags)
+          || remoteHash(actual) !== remoteHash({ ...intended, tags: actual.tags })) fail("VELOG_READBACK_FAILED", "Velog's readback does not match the intended content and state.");
         saveJournal(file, { ...state, status: "succeeded", remoteHash: remoteHash(actual) });
         return { ok: true, command: "velog push", ...identity(actual, account), updated: !!old, visibility: article.meta.visibility, readbackVerified: true, liveVerified: false };
       } catch (error) {

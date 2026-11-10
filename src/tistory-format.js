@@ -96,6 +96,12 @@ export function attachment(upload) {
 }
 export function renderTistory(article, uploaded = new Map()) {
   const md = article.md; const original = md.renderer.rules.image;
+  const paragraph = md.renderer.rules.paragraph_open;
+  // Tistory's optional .tt_article_useless_p_margin stylesheet resets every
+  // paragraph margin with !important. Keep authored Markdown paragraphs distinct
+  // without changing the user's editor options or adding empty content blocks.
+  md.renderer.rules.paragraph_open = (tokens, index) => tokens[index].hidden ? ''
+    : '<p data-ke-size="size16" style="margin: 0 0 1em !important;">';
   md.renderer.rules.image = (tokens, index, options, env, self) => {
     const token = tokens[index], source = token.attrGet('src');
     if (article.images.get(source)?.kind !== 'local') return original(tokens, index, options, env, self);
@@ -106,8 +112,8 @@ export function renderTistory(article, uploaded = new Map()) {
     if (!Number.isSafeInteger(size.width) || !Number.isSafeInteger(size.height) || size.width <= 0 || size.height <= 0) fail('TISTORY_IMAGE_FAILED', 'Unsupported image dimensions.');
     // Retain alt/title as escaped HTML caption text outside the platform substitution.
     const caption = md.utils.escapeHtml(token.content || token.attrGet('title') || '');
-    return `[##_Image|${ref}|CDM|1.3|${JSON.stringify({ originWidth: size.width, originHeight: size.height, style: 'alignCenter' })}_##]${caption ? `<span>${caption}</span>` : ''}`;
+    return `[##_Image|${ref}|CDM|1.3|${JSON.stringify({ originWidth: size.width, originHeight: size.height, style: 'alignCenter' })}_##]${caption ? `<span style="display: block; font-size: 0.875em; margin: 0.5em 0 1em;">${caption}</span>` : ''}`;
   };
   try { return md.renderer.render(article.tokens, md.options, {}); }
-  finally { md.renderer.rules.image = original; }
+  finally { md.renderer.rules.image = original; md.renderer.rules.paragraph_open = paragraph; }
 }

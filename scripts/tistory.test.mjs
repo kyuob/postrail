@@ -9,7 +9,7 @@ import { loadArticle, loadConfig } from '../src/core.js';
 import { tistoryTarget, TistoryClient } from '../src/tistory-client.js';
 import { checkTistory, pushTistory, statusTistory, loginTistory, getTistory } from '../src/tistory.js';
 import { editorConfig, verifyBlog, postFromConfig, attachment, renderTistory, canonicalHtml } from '../src/tistory-format.js';
-import { journalPath, readJournal, locked } from '../src/tistory-storage.js';
+import { journalPath, readJournal, saveJournal, locked } from '../src/tistory-storage.js';
 import { manualChromeLogin } from '../src/manual-chrome-login.js';
 import { EventEmitter } from 'node:events';
 
@@ -69,6 +69,41 @@ for (const visibility of ['private', 'public']) test(`${visibility}: explicit cr
   assert.equal(s.state.writes[0].input.visibility, visibility === 'private' ? 0 : 20);
   assert.equal(f.state().status, 'succeeded'); assert.equal(readFileSync(f.file, 'utf8'), f.text);
   assert.equal((await getTistory(f.article(), target, f.dir, s.session)).matchesLastSaved, true);
+});
+test('server ASCII tag casing is accepted while editor conflicts stay exact', async t => {
+  const f = fixture(t); const s = server(); const read = s.client.read;
+  s.client.read = async id => {
+    s.state.post.tags = s.state.post.tags.map(x => x.toLowerCase());
+    s.state.post.editor.tags = s.state.post.tags.join(','); return read(id);
+  };
+  await pushTistory(f.article(), target, f.dir, true, s.session);
+  assert.equal((await getTistory(f.article(), target, f.dir, s.session)).matchesLastSaved, true);
+  s.client.read = read; s.state.post.editor.tags = '개발,CLI';
+  await rejects(() => pushTistory(f.article(), target, f.dir, true, s.session), 'TISTORY_REMOTE_CONFLICT');
+});
+for (const tags of [['개발'], ['개발', 'other'], ['개발', 'cli', 'cli'], ['開發', 'cli'], ['개발', ' cli']]) test(`changed tag identity rejected: ${JSON.stringify(tags)}`, async t => {
+  const f = fixture(t); const s = server();
+  s.client.read = async () => ({ ...s.state.post, tags });
+  await rejects(() => pushTistory(f.article(), target, f.dir, true, s.session), 'TISTORY_READBACK_FAILED');
+});
+test('paragraphs and image captions keep visible spacing without leaking renderer rules', t => {
+  const f = fixture(t, 'private', '첫 문단.\n\n둘째 문단.\n\n![설명](image.png)\n\n- 하나\n- 둘\n');
+  const a = f.article(); const before = a.md.renderer.render(a.tokens, a.md.options, {});
+  const output = renderTistory(a, new Map([['image.png', attachment(upload)]]));
+  assert.equal((output.match(/style="margin: 0 0 1em !important;"/g) ?? []).length, 3);
+  assert.match(output, /display: block; font-size: 0.875em/);
+  assert.match(output, /<li>하나<\/li>/);
+  assert.equal(a.md.renderer.render(a.tokens, a.md.options, {}), before);
+});
+test('older renderer journals update the same ID once, then skip', async t => {
+  const f = fixture(t); const s = server();
+  await pushTistory(f.article(), target, f.dir, true, s.session);
+  const file = journalPath(f.dir, target, f.article().meta.id, false);
+  const old = readJournal(file, target, f.article().meta.id); delete old.formatVersion; saveJournal(file, old);
+  const result = await pushTistory(f.article(), target, f.dir, true, s.session);
+  assert.equal(result.updated, true); assert.equal(result.postId, old.postId);
+  assert.equal((await pushTistory(f.article(), target, f.dir, true, s.session)).skipped, true);
+  assert.equal(s.state.writes.length, 2);
 });
 test('draft remains draft and is blocked before session, storage or upload', async t => {
   const f = fixture(t, 'draft');

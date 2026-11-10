@@ -12,6 +12,15 @@ import { manualChromeLogin } from '../src/manual-chrome-login.js';
 import { EventEmitter } from 'node:events';
 import { journalPath, readJournal, saveJournal, locked } from '../src/velog-journal.js';
 import { velogImages, replaceVelogImages } from '../src/velog-images.js';
+import { equivalentTags } from '../src/tags.js';
+
+test('tag identity rejects folded collisions and invalid input without Unicode folding', () => {
+  assert.equal(equivalentTags(['CLI', 'cli'], ['CLI', 'cli']), false);
+  assert.equal(equivalentTags(['CLI', 1], ['cli', 1]), false);
+  assert.equal(equivalentTags(null, []), false);
+  assert.equal(equivalentTags(['Ä'], ['ä']), false);
+  assert.equal(equivalentTags(['CLI', '개발'], ['개발', 'cli']), true);
+});
 
 const user = { id: 'author-id', username: 'tester' };
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII=', 'base64');
@@ -40,6 +49,21 @@ function server() {
   return { state, client, session };
 }
 const rejects = (fn, code) => assert.rejects(fn, error => error.code === code);
+
+test('server ASCII tag casing is accepted, but later casing edits still conflict', async t => {
+  const f = fixture(t); const s = server();
+  const read = s.client.read;
+  s.client.read = async id => { s.state.post.tags = s.state.post.tags.map(x => x.toLowerCase()); return read(id); };
+  await pushVelog(f.article(), 'tester', f.dir, true, s.session);
+  assert.equal((await getVelog(f.article(), 'tester', f.dir, s.session)).matchesLastSaved, true);
+  s.client.read = read; s.state.post.tags = ['개발', 'CLI'];
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, s.session), 'VELOG_REMOTE_CONFLICT');
+});
+for (const tags of [['개발'], ['개발', 'other'], ['개발', 'cli', 'cli'], ['開發', 'cli'], ['개발', ' cli']]) test(`changed tag identity is rejected: ${JSON.stringify(tags)}`, async t => {
+  const f = fixture(t); const s = server();
+  s.client.read = async () => ({ ...s.state.post, tags });
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, s.session), 'VELOG_READBACK_FAILED');
+});
 
 for (const visibility of ['draft', 'private', 'public']) test(`${visibility}: explicit visibility, create/readback, source preserved`, async t => {
   const f = fixture(t, visibility); const s = server();
