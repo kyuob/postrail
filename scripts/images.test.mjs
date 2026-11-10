@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, readFileSync, rmSync, symlinkSync } from 'n
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { inspectImages, IMAGE_LIMIT, TOTAL_IMAGE_LIMIT } from '../src/images.js';
 import { loadArticle } from '../src/core.js';
 
@@ -46,9 +47,9 @@ test('inventory rejects invalid paths, non-files, signatures and escaped symlink
 });
 test('built CLI reports oversize JSON and exits 1, normal inventory exits 0', t => {
   const f = fixture(t); f.image('a.png', IMAGE_LIMIT + 1); f.article('![x](a.png)');
-  const cli = new URL('../dist/cli.js', import.meta.url);
-  let result = spawnSync(process.execPath, [cli.pathname, 'images', f.file, '--json'], { cwd: f.dir, encoding: 'utf8' });
+  const cli = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
+  let result = spawnSync(process.execPath, [cli, 'images', f.file, '--json'], { cwd: f.dir, encoding: 'utf8' });
   assert.equal(result.status, 1); assert.equal(JSON.parse(result.stdout).images[0].excessBytes, 1);
-  f.image('a.png'); result = spawnSync(process.execPath, [cli.pathname, 'images', f.file], { cwd: f.dir, encoding: 'utf8' });
+  f.image('a.png'); result = spawnSync(process.execPath, [cli, 'images', f.file], { cwd: f.dir, encoding: 'utf8' });
   assert.equal(result.status, 0); assert.match(result.stdout, /Local total: 64\/20971520 bytes/);
 });
