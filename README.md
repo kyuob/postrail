@@ -2,6 +2,8 @@
 
 Write once. Publish across your blogs.
 
+Experimental [v0.1.2](docs/release-0.1.2.md) adds Velog recovery, [image diagnostics](docs/images.md), isolated global-install checks and release verification. npm publication remains separate.
+
 [한국어](README.ko.md) · [Installation](docs/installation.md) · [Login](docs/login.md) · [FAQ](docs/faq.md) · [Support matrix](docs/support.md)
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
@@ -30,10 +32,11 @@ node dist/cli.js plan examples/article.md --to velog,tistory,keyflow,blogger --j
 
 - `init`: create `postrail.json` in the current directory without overwriting files.
 - `validate <article.md>`: validate YAML frontmatter, body, targets, and local images.
+- `images <article.md>`: list image sizes, budget excess and preparation guidance without changing originals or fetching remote images.
 - `preview <article.md> [--output <new.html>]`: produce offline HTML with embedded local images; external images are omitted and raw HTML is escaped.
 - `plan <article.md> [--to velog,tistory,keyflow,blogger]`: inspect requested targets and their adapter limitations.
 
-All four commands support `--json`. See the [offline CLI guide](docs/offline-cli.md) for the article format, limits, configuration precedence, and exit codes. A successful plan means the plan was created; it does not mean publishing is available.
+All five commands support `--json`. See the [offline CLI guide](docs/offline-cli.md) for the article format, limits, configuration precedence, and exit codes. A successful plan means the plan was created; it does not mean publishing is available.
 
 ## KeyFlow adapter
 

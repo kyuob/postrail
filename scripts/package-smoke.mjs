@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync, lstatSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, existsSync, lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { allowedPackageFile } from './package-files.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const base = path.join(root, '.postrail/stage7'); mkdirSync(base, { recursive: true, mode: 0o700 });
@@ -19,8 +20,7 @@ assert.equal(pkg.private, true); // Packing and local install do not authorize p
 run('bun', ['pm', 'pack', '--destination', output, '--quiet']);
 const archive = path.join(output, `${pkg.name.replace(/^@/, '').replaceAll('/', '-')}-${pkg.version}.tgz`); assert(existsSync(archive));
 const entries = run('tar', ['-tzf', archive]).trim().split(/\r?\n/).filter(Boolean);
-const allowed = name => /^package\/(?:package\.json|LICENSE|README(?:\.ko)?\.md|CHANGELOG\.md|CONTRIBUTING\.md|SECURITY\.md|dist\/cli\.js|docs\/[A-Za-z0-9._-]+\.md|examples\/[A-Za-z0-9._-]+\.(?:md|json))$/.test(name);
-for (const entry of entries) assert(allowed(entry), `Unexpected package entry: ${entry}`);
+for (const entry of entries) assert(allowedPackageFile(entry), `Unexpected package entry: ${entry}`);
 for (const required of ['package/package.json', 'package/dist/cli.js', 'package/LICENSE', 'package/README.ko.md', 'package/docs/installation.md', 'package/docs/login.md', 'package/docs/faq.md', 'package/SECURITY.md', 'package/CHANGELOG.md']) assert(entries.includes(required), `Missing package file: ${required}`);
 assert(!run('tar', ['-tvzf', archive]).split(/\r?\n/).some(line => /^[lh]/.test(line)), 'Package must not include symlink/hardlink entries.');
 const consumer = path.join(work, 'consumer'), home = path.join(work, 'home'); mkdirSync(consumer); mkdirSync(home, { mode: 0o700 });
@@ -42,8 +42,28 @@ const example = path.join(installed, 'examples/blogger.md');
 assert.equal(JSON.parse(run(process.execPath, [cli, 'validate', example, '--json'], consumer, env)).ok, true);
 const dry = JSON.parse(run(process.execPath, [cli, 'publish', example, '--to', 'velog,blogger', '--destinations', path.join(installed, 'examples/destinations.json'), '--dry-run', '--json'], consumer, env));
 assert.equal(dry.ok, true); assert.equal(dry.offline, true); assert.deepEqual(dry.results, []);
+// Isolate both installation and bin locations; never use the user's global prefix.
+const globalDir = path.join(work, 'global'), globalBin = path.join(work, 'bin');
+mkdirSync(globalDir); mkdirSync(globalBin);
+writeFileSync(path.join(globalDir, 'package.json'), JSON.stringify({ private: true }));
+const globalConfig = path.join(work, 'global-bunfig.toml');
+writeFileSync(globalConfig, `[install]\nglobalDir = ${JSON.stringify(globalDir.replaceAll('\\', '/'))}\nglobalBinDir = ${JSON.stringify(globalBin.replaceAll('\\', '/'))}\n`);
+const globalEnv = { ...env, BUN_INSTALL_GLOBAL_DIR: globalDir, BUN_INSTALL_BIN: globalBin, PATH: globalBin + path.delimiter + process.env.PATH };
+run('bun', ['add', '-g', `--config=${globalConfig}`, archive, '--ignore-scripts'], globalDir, globalEnv);
+const globalLauncher = path.join(globalBin, process.platform === 'win32' ? 'postrail.exe' : 'postrail');
+assert(existsSync(globalLauncher), 'Isolated global launcher missing.');
+const globalPackage = path.join(globalDir, 'node_modules', pkg.name);
+assert(existsSync(path.join(globalPackage, 'package.json')), 'Global package escaped the isolated prefix.');
+assert(realpathSync(globalPackage).startsWith(realpathSync(globalDir) + path.sep), 'Global package must remain in the isolated prefix.');
+const locate = process.platform === 'win32' ? ['where.exe', ['postrail']] : ['which', ['postrail']];
+assert.equal(run(...locate, consumer, globalEnv).trim().split(/\r?\n/)[0], globalLauncher);
+assert.equal(run(globalLauncher, ['--version'], consumer, globalEnv).trim(), pkg.version);
+assert.match(run(globalLauncher, ['--help'], consumer, globalEnv), /postrail images/);
+run('bun', ['remove', '-g', `--config=${globalConfig}`, pkg.name], globalDir, globalEnv);
+assert(!existsSync(globalLauncher), 'Global launcher must be removed.');
+assert(!existsSync(path.join(globalDir, 'node_modules', pkg.name)), 'Global package must be removed.');
 const proof = { ok: true, platform: process.platform, arch: process.arch, node: process.version, bun: run('bun', ['--version']).trim(), version: pkg.version,
  archive: path.relative(root, archive), sha256: createHash('sha256').update(readFileSync(archive)).digest('hex'), fileCount: entries.length,
- installedBin: true, externalDependencies: true, offlineCli: true, published: false };
+ installedBin: true, externalDependencies: true, offlineCli: true, isolatedGlobalInstall: true, globalPath: true, globalRemoval: true, published: false };
 writeFileSync(path.join(base, 'package-proof.json'), JSON.stringify(proof, null, 2) + '\n', { mode: 0o600 });
-console.log(`PASS package: ${entries.length} allowlisted files, clean local install, external dependencies, executable bin and offline CLI; ${process.platform}/${process.arch}, Node ${process.version}. No publication/authentication performed.`);
+console.log(`PASS package: ${entries.length} allowlisted files, clean local and isolated global install, PATH, removal, dependencies, bin and offline CLI; ${process.platform}/${process.arch}, Node ${process.version}. No publication/authentication performed.`);

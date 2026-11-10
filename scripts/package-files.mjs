@@ -1,0 +1,1 @@
+export const allowedPackageFile = name => /^package\/(?:package\.json|LICENSE|README(?:\.ko)?\.md|CHANGELOG\.md|CONTRIBUTING\.md|SECURITY\.md|dist\/cli\.js|docs\/[A-Za-z0-9._-]+\.md|examples\/[A-Za-z0-9._-]+\.(?:md|json))$/.test(name);

@@ -30,7 +30,7 @@ for (const name of ['article', 'velog', 'tistory', 'blogger']) assert.equal(run(
 assert.equal(run(['publish', 'examples/blogger.md', '--to', 'velog,blogger', '--destinations', 'examples/destinations.json', '--dry-run', '--json']).offline, true);
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json')));
 assert.equal(pkg.private, true); // GitHub release only; registry publication is separate.
-assert.equal(pkg.name, '@kyuob/postrail'); assert.equal(pkg.version, '0.1.0');
+assert.equal(pkg.name, '@kyuob/postrail'); assert.equal(pkg.version, '0.1.2');
 const workflowText = readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
 const workflow = parseDocument(workflowText).toJS();
 assert.equal(workflow.permissions.contents, 'read');

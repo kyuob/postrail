@@ -8,6 +8,7 @@ import { tistoryCommand } from "./tistory-command.js";
 import { bloggerCommand } from "./blogger-command.js";
 import { publishCommand } from "./publish-command.js";
 import { publishCapabilities } from "./publish.js";
+import { inspectImages } from './images.js';
 
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -20,6 +21,7 @@ Usage:
   postrail publish <article.md> --destinations <file> [--to velog,tistory,keyflow,blogger] [--dry-run | --confirm] [--config <file>] [--json]
   postrail init [--json]
   postrail validate <article.md> [--config <file>] [--json]
+  postrail images <article.md> [--config <file>] [--json]
   postrail preview <article.md> [--output <new.html>] [--config <file>] [--json]
   postrail plan <article.md> [--to velog,tistory,keyflow,blogger] [--config <file>] [--json]
   postrail keyflow check <article.md> [--config <file>] [--json]
@@ -47,7 +49,7 @@ Usage:
   postrail --help
   postrail --version
 
-init/validate/preview/plan and platform check/status are offline.
+init/validate/images/preview/plan and platform check/status are offline.
 KeyFlow login opens a browser; keyflow push sends content after --confirm.
 Preview prints HTML unless --output is given.
 Existing files are never overwritten. --json returns structured results/errors.
@@ -61,7 +63,7 @@ function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };
   if (args.length === 1 && ["--version", "-v"].includes(args[0])) return { command: "version" };
   const [command, ...rest] = args;
-  if (!["init", "validate", "preview", "plan"].includes(command)) fail("UNSUPPORTED_COMMAND", "Unsupported command or arguments. Run postrail --help for supported commands.");
+  if (!["init", "validate", "images", "preview", "plan"].includes(command)) fail("UNSUPPORTED_COMMAND", "Unsupported command or arguments. Run postrail --help for supported commands.");
   const allowed = command === "init" ? ["--json"] : ["--json", "--config", ...(command === "preview" ? ["--output"] : []), ...(command === "plan" ? ["--to"] : [])];
   const options = {};
   let file;
@@ -159,6 +161,19 @@ async function main() {
     result = { ok: true, command, config: initialize(process.cwd()) };
   } else {
     const config = loadConfig(path.resolve(options["--config"] ?? "postrail.json"), !!options["--config"]);
+    if (command === 'images') {
+      const report = inspectImages(path.resolve(file), config);
+      if (json) console.log(JSON.stringify(report));
+      else {
+        console.log(`Image budget: ${report.title}`);
+        for (const image of report.images) console.log(`  ${JSON.stringify(image.source)}: ${image.kind === 'remote' ? 'remote; not fetched' : `${image.bytes} bytes${image.excessBytes ? `; exceeds file limit by ${image.excessBytes} bytes` : ''}`}; references=${image.occurrences}`);
+        console.log(`Local total: ${report.totalBytes}/${report.limits.totalBytes} bytes; excess=${report.excessBytes}; unique files=${report.uniqueFiles} (${report.uniqueFileBytes} bytes)`);
+        console.log(`Per-file limit: ${report.limits.fileBytes} bytes`);
+        for (const line of report.guidance) console.log(line);
+      }
+      if (!report.ok) process.exitCode = 1;
+      return;
+    }
     const to = options["--to"] === undefined ? undefined : targets(options["--to"].split(","), "INVALID_ARGUMENT");
     const article = loadArticle(path.resolve(file), config, to);
     result = { ok: true, command, offline: true, article: summary(article) };

@@ -17,7 +17,7 @@ export function readBounded(file, limit, code = "READ_FAILED") {
     fd = openSync(file, constants.O_RDONLY | constants.O_NONBLOCK);
     const stat = fstatSync(fd);
     if (!stat.isFile()) fail(code, "Expected a regular file.");
-    if (stat.size > limit) fail(code, "File exceeds the supported size limit.");
+    if (stat.size > limit) fail(code, code === 'INVALID_IMAGE' ? `Local image is ${stat.size} bytes; limit=${limit}; excess=${stat.size - limit}. Run postrail images <article.md> for the file inventory.` : "File exceeds the supported size limit.");
     // Bound the read even if the file grows after fstat.
     const buffer = Buffer.alloc(limit + 1);
     let offset = 0;
@@ -87,7 +87,7 @@ export function markdown() {
   return md;
 }
 
-export function loadArticle(file, config, overrideTargets) {
+export function parseArticle(file, config, overrideTargets) {
   const bytes = readBounded(file, 2 * 1024 * 1024);
   let source;
   try { source = new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^\uFEFF/, "").replace(/\r\n/g, "\n"); }
@@ -113,6 +113,33 @@ export function loadArticle(file, config, overrideTargets) {
   if (!body.trim()) fail("INVALID_ARTICLE", "Article body must not be empty.");
   const md = markdown();
   const tokens = md.parse(body, {});
+  return { meta: { id: meta.id, title: meta.title.trim(), tags, visibility: chosenVisibility, targets: chosenTargets }, body, md, tokens };
+}
+
+export function localImagePath(base, src) {
+  let decoded;
+  try { decoded = decodeURIComponent(src); } catch { fail("INVALID_IMAGE", "Image path has invalid encoding."); }
+  if (!decoded || /[\x00-\x1f\\?#]/.test(decoded) || decoded.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(decoded)) fail("INVALID_IMAGE", "Images must use relative file paths or HTTP(S) URLs.");
+  let absolute;
+  try { absolute = realpathSync(path.resolve(base, decoded)); }
+  catch { fail("INVALID_IMAGE", "Local image does not exist."); }
+  const relative = path.relative(base, absolute);
+  if (relative.startsWith(`..${path.sep}`) || relative === ".." || path.isAbsolute(relative)) fail("INVALID_IMAGE", "Local images must stay inside the article directory, including symlink targets.");
+  return absolute;
+}
+
+export function imageMime(absolute, data) {
+  const extension = path.extname(absolute).toLowerCase();
+  if (extension === ".png" && data.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) return "image/png";
+  if ([".jpg", ".jpeg"].includes(extension) && data[0] === 255 && data[1] === 216 && data[2] === 255) return "image/jpeg";
+  if (extension === ".gif" && ["GIF87a", "GIF89a"].includes(data.subarray(0, 6).toString())) return "image/gif";
+  if (extension === ".webp" && data.subarray(0, 4).toString() === "RIFF" && data.subarray(8, 12).toString() === "WEBP") return "image/webp";
+  fail("INVALID_IMAGE", "Local images must be PNG, JPEG, GIF, or WebP with matching file signatures.");
+}
+
+export function loadArticle(file, config, overrideTargets) {
+  const parsed = parseArticle(file, config, overrideTargets);
+  const { tokens } = parsed;
   const images = new Map();
   const warnings = new Set();
   const base = path.dirname(realpathSync(file));
@@ -126,24 +153,11 @@ export function loadArticle(file, config, overrideTargets) {
             images.set(src, { kind: "remote", source: src });
             warnings.add("REMOTE_IMAGES_NOT_FETCHED");
           } else {
-            let decoded;
-            try { decoded = decodeURIComponent(src); } catch { fail("INVALID_IMAGE", "Image path has invalid encoding."); }
-            if (!decoded || /[\x00-\x1f\\?#]/.test(decoded) || decoded.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(decoded)) fail("INVALID_IMAGE", "Images must use relative file paths or HTTP(S) URLs.");
-            let absolute;
-            try { absolute = realpathSync(path.resolve(base, decoded)); }
-            catch { fail("INVALID_IMAGE", "Local image does not exist."); }
-            const relative = path.relative(base, absolute);
-            if (relative.startsWith(`..${path.sep}`) || relative === ".." || path.isAbsolute(relative)) fail("INVALID_IMAGE", "Local images must stay inside the article directory, including symlink targets.");
+            const absolute = localImagePath(base, src);
             const data = readBounded(absolute, 5 * 1024 * 1024, "INVALID_IMAGE");
             imageBytes += data.length;
-            if (imageBytes > 20 * 1024 * 1024) fail("INVALID_IMAGE", "Combined local images exceed the supported size limit.");
-            const extension = path.extname(absolute).toLowerCase();
-            let mime;
-            if (extension === ".png" && data.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]))) mime = "image/png";
-            else if ([".jpg", ".jpeg"].includes(extension) && data[0] === 255 && data[1] === 216 && data[2] === 255) mime = "image/jpeg";
-            else if (extension === ".gif" && ["GIF87a", "GIF89a"].includes(data.subarray(0, 6).toString())) mime = "image/gif";
-            else if (extension === ".webp" && data.subarray(0, 4).toString() === "RIFF" && data.subarray(8, 12).toString() === "WEBP") mime = "image/webp";
-            else fail("INVALID_IMAGE", "Local images must be PNG, JPEG, GIF, or WebP with matching file signatures.");
+            if (imageBytes > 20 * 1024 * 1024) fail("INVALID_IMAGE", `Combined local images exceed the supported size limit (${imageBytes} bytes counted so far). Run postrail images <article.md> for the complete total and file inventory.`);
+            const mime = imageMime(absolute, data);
             images.set(src, { kind: "local", source: src, mime, data });
           }
         }
@@ -152,9 +166,8 @@ export function loadArticle(file, config, overrideTargets) {
     }
   }
   inspect(tokens);
-  const metaResult = { id: meta.id, title: meta.title.trim(), tags, visibility: chosenVisibility, targets: chosenTargets };
-  const article = { meta: metaResult, body, md, tokens, images, warnings: [...warnings] };
-  article.contentHash = contentHashForTargets(article, chosenTargets);
+  const article = { ...parsed, images, warnings: [...warnings] };
+  article.contentHash = contentHashForTargets(article);
   return article;
 }
 

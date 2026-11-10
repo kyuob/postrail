@@ -1,6 +1,13 @@
 # Changelog
 
-## Unreleased — Velog recovery
+## 0.1.2 — 2026-11-10
+
+- Combine the stability and explicit Velog recovery changes below into an experimental GitHub prerelease; npm publication remains excluded.
+- Add offline `images` inventory with file/total byte limits, exact excess amounts, source-reference counts and original-preserving preparation guidance. Limits and publishing hashes remain unchanged.
+- Extend package checks to isolated global installation, PATH discovery and removal using an explicit Bun configuration. Verify downloaded release assets, checksums, package allowlist, exact tag commit and latest CI; optionally compare the locally tested archive byte-for-byte.
+- New behavior is verified offline. No additional account authentication, blog publication or user-journal recovery is performed.
+
+### Included Velog recovery
 
 - Add read-only `velog inspect` and explicitly reviewed local `velog reconcile`, limited to owned saved pending/unknown IDs. Compare source, exact reconstructed Markdown, tags, both visibility flags and local CDN image bytes.
 - Require a fresh source/journal/remote review hash, explicit tag-difference acceptance, journal lock and verified private byte-exact backup before local reconciliation. No remote publication writes, retries or abandoned-lock cleanup.
@@ -8,13 +15,13 @@
 - Recovery is not available in the v0.1.0 tarball, is not implemented for other adapters, and was tested with synthetic sessions only. Existing user journals and posts were not changed.
 - Scoped regressions now total225, including review staleness, exact draft/private flags, CDN restrictions, journal backups and post-recovery conflict checks.
 
-## Unreleased — v0.1.1 stability work
+### Included stability work (original v0.1.1 target)
 
 - Reject ASCII-case-colliding tags in Velog/Tistory offline checks and direct pushes before authentication, uploads or journal creation.
 - Retain verified owned Velog post identities from incomplete mutation responses, including partial GraphQL errors; retain unknown status and block retries. Reject foreign owners and changed update IDs.
 - Add sanitized local-state, saved-ID and next-action hints to common failed results without converting them to success or issuing remote requests. Accept valid Velog IDs beginning with `_` or `-` in common results.
 - Make beginner onboarding self-contained and verify the exact documented offline flow in empty consumers. Align prerelease and remote-conflict documentation with actual limits.
-- Scoped publishing regressions:193 passing. These changes are local and unreleased; package version remains0.1.0. No additional KeyFlow-specific checks or live publishing were performed.
+- Original stability validation:193 scoped publishing regressions passed. The changes are included in0.1.2. No additional KeyFlow-specific checks or live publishing were performed.
 
 ## 0.1.0 — 2026-11-10
 
