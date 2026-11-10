@@ -2,7 +2,7 @@
 
 ## 검증 범위
 
-2026-11-10 기준 v3 어댑터의 실제 Google 로그인·초안 생성·같은ID 수정·재조회·변경 없는 전송 건너뛰기를 확인했다. 사용자는 이후 테스트 초안을 직접 삭제했다. 이어 지정 원고의 비공개→공개 전환, 같은ID 수정과 이미지12개·추천 이미지2개의 실제 클릭을 macOS Chrome에서 확인했다. [초기 실검증](bundled-validation-results.md)과 [공개 글 검수](publication-fable52.md)를 구분하며, `liveVerified:false`를 모든 기능의 검증 주장으로 바꾸지 않는다. 공개된 안정적 외부 발행API계약은 아니므로 내부 인터페이스 변경에 영향을 받는다.
+2026-11-10 기준 v3 어댑터의 실제 Google 로그인·초안 생성·같은ID 수정·재조회·변경 없는 전송 건너뛰기를 확인했다. 사용자는 이후 테스트 초안을 직접 삭제했다. 이어 지정 원고의 비공개→공개 전환, 같은ID 수정과 이미지12개·추천 이미지2개의 실제 클릭을 macOS Chrome에서 확인했다. [초기 실검증](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation-results.md)과 [공개 글 검수](https://github.com/kyuob/postrail/blob/main/docs/publication-fable52.md)를 구분하며, `liveVerified:false`를 모든 기능의 검증 주장으로 바꾸지 않는다. 공개된 안정적 외부 발행API계약은 아니므로 내부 인터페이스 변경에 영향을 받는다.
 
 ## 명령
 
@@ -71,7 +71,7 @@ POSIX에서는 상태 파일과 디렉터리 이름 변경을 fsync한다. Windo
 
 - [공식 v3 Post 스키마](https://github.com/velog-io/velog/blob/63dcace01e1c87b35a38027f681d9e7c0f210467/apps/server/src/graphql/Post.gql): input 객체, ID 읽기, 초안·비공개 필드.
 - [공식 업로드 라우트](https://github.com/velog-io/velog/blob/63dcace01e1c87b35a38027f681d9e7c0f210467/apps/server/src/routes/files/v3/index.mts), [업로드 처리](https://github.com/velog-io/velog/blob/63dcace01e1c87b35a38027f681d9e7c0f210467/apps/server/src/routes/files/v3/filesController.mts): multipart `image`, `type=post`, 반환 `path`.
-- [참고한 한국 개발자 프로젝트 2개](references.md): 읽기 전용으로 규격을 비교했으며 쿠키 추출 코드는 채택하지 않았다.
+- [참고한 한국 개발자 프로젝트 2개](https://github.com/kyuob/postrail/blob/main/docs/references.md): 읽기 전용으로 규격을 비교했으며 쿠키 추출 코드는 채택하지 않았다.
 - [Playwright APIRequestContext](https://playwright.dev/docs/api/class-apirequestcontext): 브라우저 컨텍스트의 쿠키를 공유하고 Set-Cookie를 반영한다.
 
 `bun run check:velog`는 공통 CLI와 Velog의 생성·수정·읽기 확인·충돌·unknown·이미지·전송 옵션을 검사한다. 모의 응답 검사는 실계정 작동 증거가 아니다. 실제 시험은 사용자가 정확한 계정과 원고·상태를 승인한 다음 별도로 진행한다. KeyFlow의 추가 검증은 재개하지 않는다.

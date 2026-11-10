@@ -46,6 +46,23 @@ Google이 동의를 차단하면 에러 종류를 확인한다. Desktop client, 
 
 기존 [KeyFlow 가이드](keyflow.md)의 공식 CLI 로그인과 명시적 계정 이름을 그대로 사용한다. 이 문서 작업은 추가 인증·검증·전송을 수행하지 않는다. 계정 선택은 `postrail keyflow login --account MY_ACCOUNT`, 공통 대상 파일에는 같은 `account`를 사용한다.
 
+## Chrome이 다른 위치에 설치된 경우 · Unreleased
+
+공개된0.1.3이 아닌 현재 소스의 기능이다. macOS에서 기본 `/Applications/Google Chrome.app` 대신 본인이 설치한 Google Chrome 실행 파일을 지정할 수 있다. 앱 폴더가 아니라 앱 내부 실행 파일의 절대 경로를 사용한다. 빈 문자열·상대 경로·제어 문자가 있는 값은 거절한다.
+
+```sh
+postrail velog login --account MY_ACCOUNT --chrome-path "$HOME/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+postrail tistory login --blog MY_BLOG --blog-id 12345 --chrome-path "$HOME/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+옵션은 이번 로그인과 종료 후 저장 계정 확인에 함께 적용한다. 이후 get/push 등에서도 같은 설치 위치를 쓰려면 해당 터미널에 `POSTRAIL_CHROME_PATH`를 설정한다. 명시적 로그인 옵션이 환경 변수보다 우선하며, 둘 다 없으면 기존 기본 Chrome 경로를 사용한다. CLI가 셸 설정이나 환경 변수를 대신 저장하지 않는다.
+
+```sh
+export POSTRAIL_CHROME_PATH="$HOME/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+```
+
+전용 Postrail 프로필·고정 로그인 URL·macOS 지원 범위·사용자의 직접 인증·정상 종료 후 확인 절차는 같다. 실행 경로만 지정하며 브라우저 보안 설정이나 인증을 우회하지 않는다. 별도 위치에 설치한 Chrome의 실계정 로그인은 이번 수정에서 검증하지 않았다.
+
 ## 저장 위치와 로그인 해제
 
 Velog/Tistory의 세션은 사용자 홈의 `~/.postrail/velog-profiles/`, `~/.postrail/tistory-profiles/` 안에서 계정별 해시 경로로 분리한다. Blogger 토큰은 `~/.postrail/blogger-accounts/`의 권한 제한 JSON에 보관하며 OS Keychain 암호화 파일이라고 주장하지 않는다. 프로젝트의 `.postrail/` 전송 이력과 구분한다.

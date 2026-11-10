@@ -20,7 +20,12 @@
   "bin": {
     "postrail": "./dist/cli.js"
   },
-  "files": ["dist/cli.js", "README.md", "README.ko.md", "LICENSE", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "docs", "examples"],
+  "files": [
+    "dist/cli.js", "README.md", "README.ko.md", "LICENSE", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md",
+    "docs/blogger.md", "docs/faq.md", "docs/images.md", "docs/installation.md", "docs/keyflow.md", "docs/login.md",
+    "docs/npm-publication.md", "docs/offline-cli.md", "docs/publish.md", "docs/recovery.md", "docs/release-0.1.0.md",
+    "docs/release-0.1.2.md", "docs/support.md", "docs/third-party-notices.md", "docs/tistory.md", "docs/velog.md", "examples"
+  ],
   "engines": {
     "node": ">=22",
     "bun": ">=1.3"

@@ -60,6 +60,19 @@ for (const state of [{ status: 'unknown', postId: 'saved-id' }, { status: 'unkno
   assert.equal(r.status, 'failed'); assert.equal(r.localStatus, state.status); assert.equal(r.postId, state.postId); assert.equal(r.automaticRetry, false); assert.equal(statusReads, 1);
   assert.equal(r.nextAction, state.status === 'not_submitted' ? 'review_inputs' : 'inspect_remote'); assert.doesNotMatch(JSON.stringify(r), /SECRET/);
 });
+test('generic local-only adapter recovery retains saved IDs without a remote instruction', async t => {
+  const f = fixture(t), m = mocked();
+  m.implementations.velog = { check: () => ({ blockers: [] }), push: async () => { throw Error('SECRET'); }, status: () => ({ state: { status: 'unknown', postId: 'saved-id' } }), localOnly: true };
+  const r = (await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations)).results[0];
+  assert.equal(r.localStatus, 'unknown'); assert.equal(r.postId, 'saved-id'); assert.equal(r.nextAction, 'inspect_local_state'); assert.equal(r.automaticRetry, false); assert.doesNotMatch(JSON.stringify(r), /SECRET/);
+});
+test('generic failed local state without an ID recommends input review, never retry', async t => {
+  const f = fixture(t), m = mocked();
+  m.implementations.velog.push = async () => { throw Error('SECRET'); };
+  m.implementations.velog.status = () => ({ state: { status: 'failed' } });
+  const r = (await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations)).results[0];
+  assert.equal(r.localStatus, 'failed'); assert.equal(r.nextAction, 'review_inputs'); assert.equal(r.postId, undefined); assert.equal(r.automaticRetry, false);
+});
 test('unreadable local outcome keeps partial results and exposes no arbitrary data', async t => {
   const f = fixture(t), m = mocked('tistory'); m.implementations.tistory.status = () => { throw Error('SECRET'); };
   const r = await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations);

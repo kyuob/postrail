@@ -9,7 +9,7 @@ export async function tistoryCommand(args) {
   const [action, ...rest] = args;
   if (!['check', 'status', 'login', 'push', 'get', 'inspect', 'reconcile'].includes(action)) fail('INVALID_ARGUMENT', 'Use tistory check, status, login, push, get, inspect or reconcile.');
   const recovery = ['inspect', 'reconcile'].includes(action);
-  const allowed = action === 'login' ? ['--blog', '--blog-id'] : ['--json', '--config', ...(action === 'check' ? [] : ['--blog', '--blog-id']), ...(action === 'push' ? ['--confirm'] : []), ...(recovery ? ['--published-to'] : []), ...(action === 'reconcile' ? ['--confirm', '--review', '--accept-tags'] : [])];
+  const allowed = action === 'login' ? ['--blog', '--blog-id', '--chrome-path'] : ['--json', '--config', ...(action === 'check' ? [] : ['--blog', '--blog-id']), ...(action === 'push' ? ['--confirm'] : []), ...(recovery ? ['--published-to'] : []), ...(action === 'reconcile' ? ['--confirm', '--review', '--accept-tags'] : [])];
   const options = {}; let file;
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
@@ -23,7 +23,7 @@ export async function tistoryCommand(args) {
   const target = action === 'check' ? undefined : tistoryTarget(options['--blog'], options['--blog-id']);
   if (action === 'login') {
     console.error('Sign into the requested Tistory blog in the dedicated Postrail Chrome window. Complete any verification yourself; no password or cookie is needed in this terminal.');
-    return loginTistory(target);
+    return loginTistory(target, undefined, { chromePath: options['--chrome-path'] });
   }
   if (!file) fail('INVALID_ARGUMENT', 'An article path is required.');
   if (action === 'push' && !options['--confirm']) fail('TISTORY_CONFIRM_REQUIRED', 'Review the article and destination, then pass --confirm.');

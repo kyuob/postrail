@@ -22,6 +22,11 @@ test('manual Tistory login opens only the canonical manager and waits for user e
   await Promise.resolve(); assert.equal(finished, false); browser.emit('close', 0); await waiting;
   assert.equal(finished, true);
 });
+test('Tistory login forwards an explicit executable to its session', async () => {
+  const chromePath = '/Users/test/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  const blog = tistoryTarget('test-blog', '12345');
+  await loginTistory(blog, async (_target, action, options) => { assert.deepEqual(options, { login: true, chromePath }); return action({}, blog); }, { chromePath });
+});
 test('manual Tistory login rejects destination substitution and unsupported systems before spawn', async () => {
   const spawnImpl = () => { assert.fail('must not launch'); };
   for (const destination of ['https://evil.test/manage', 'https://test-blog.tistory.com/manage?token=SECRET', 'https://test-blog.tistory.com.evil.test/manage']) {

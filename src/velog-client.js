@@ -3,7 +3,7 @@ import { realpathSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fail } from "./core.js";
 import { digest, privateDirectory } from "./velog-journal.js";
-import { manualChromeLogin } from "./manual-chrome-login.js";
+import { manualChromeLogin, chromeExecutable } from "./manual-chrome-login.js";
 
 export const VELOG_GRAPHQL = "https://v3.velog.io/graphql";
 export const VELOG_UPLOAD = "https://v3.velog.io/api/files/v3/upload";
@@ -80,19 +80,20 @@ export function authDiagnostic(rawUrl, status) {
   if (!route) return undefined;
   return { route, status: Number.isInteger(status) && status >= 100 && status <= 599 ? status : 'network-failed' };
 }
-export async function withVelogSession(account, action, { login = false, diagnostics = false } = {}) {
+export async function withVelogSession(account, action, { login = false, diagnostics = false, chromePath } = {}) {
   velogAccount(account);
+  const executablePath = chromeExecutable(chromePath);
   const directory = profilePath(account, login);
   if (login) {
     console.error('일반 Chrome의 Postrail 전용 프로필에서 로그인한 뒤, 해당 Chrome 앱을 ⌘Q로 종료해 주세요. 종료 후 저장된 계정을 확인합니다.');
-    await manualChromeLogin(directory);
+    await manualChromeLogin(directory, { chromePath });
     if (diagnostics) console.error('Velog auth diagnostic: manual-browser-exited');
   }
   let context;
   try {
     // Keep Playwright external to the Bun bundle; it locates its runtime assets itself.
     const { chromium } = await import("playwright-core");
-    context = await chromium.launchPersistentContext(directory, { channel: "chrome", chromiumSandbox: true, headless: true, timeout: 30_000, acceptDownloads: false,
+    context = await chromium.launchPersistentContext(directory, { ...(executablePath ? { executablePath } : { channel: "chrome" }), chromiumSandbox: true, headless: true, timeout: 30_000, acceptDownloads: false,
       // Use Chrome's normal OS-backed storage for the manually authenticated
       // dedicated profile; never read or export its credential database.
       ignoreDefaultArgs: ['--use-mock-keychain', '--password-store=basic'] });

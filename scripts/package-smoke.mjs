@@ -5,6 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { allowedPackageFile } from './package-files.mjs';
+import MarkdownIt from 'markdown-it';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 assert(process.argv.length <= 3 && (!process.argv[2] || process.argv[2] === '--registry'), 'Only --registry is supported.');
@@ -24,6 +25,17 @@ run('bun', ['pm', 'pack', '--destination', output, '--quiet']);
 const archive = path.join(output, `${pkg.name.replace(/^@/, '').replaceAll('/', '-')}-${pkg.version}.tgz`); assert(existsSync(archive));
 const entries = run('tar', ['-tzf', archive]).trim().split(/\r?\n/).filter(Boolean);
 for (const entry of entries) assert(allowedPackageFile(entry), `Unexpected package entry: ${entry}`);
+// A strict file allowlist must not leave dangling local documentation links.
+const markdown = new MarkdownIt();
+for (const entry of entries.filter(name => name.endsWith('.md'))) {
+  const text = run('tar', ['-xOf', archive, entry]);
+  for (const block of markdown.parse(text, {})) for (const token of block.children ?? []) {
+    const href = token.type === 'link_open' ? token.attrGet('href') : token.type === 'image' ? token.attrGet('src') : undefined;
+    if (!href || /^(?:https?:|mailto:|#)/i.test(href)) continue;
+    const target = path.posix.normalize(path.posix.join(path.posix.dirname(entry), decodeURIComponent(href.split('#')[0])));
+    assert(entries.includes(target), `Shipped document has a missing local target: ${entry} -> ${target}`);
+  }
+}
 for (const required of ['package/package.json', 'package/dist/cli.js', 'package/LICENSE', 'package/README.ko.md', 'package/docs/installation.md', 'package/docs/login.md', 'package/docs/faq.md', 'package/SECURITY.md', 'package/CHANGELOG.md']) assert(entries.includes(required), `Missing package file: ${required}`);
 assert(!run('tar', ['-tvzf', archive]).split(/\r?\n/).some(line => /^[lh]/.test(line)), 'Package must not include symlink/hardlink entries.');
 const consumer = path.join(work, 'consumer'), home = path.join(work, 'home'); mkdirSync(consumer); mkdirSync(home, { mode: 0o700 });

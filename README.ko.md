@@ -2,11 +2,11 @@
 
 Markdown 하나를 Velog·Tistory·KeyFlow·Google Blogger로 보내는 오픈소스 CLI입니다.
 
-현재 소스의 [v0.1.2 사전 릴리스](docs/release-0.1.2.md)는 벨로그 이력 대조, [이미지 용량 진단](docs/images.md), 격리된 전역 설치·제거와 릴리스 파일 검증을 추가합니다. npm 공개는 별도입니다.
+**v0.1.3은 [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail)로 npm에 공개됐습니다.** 2026-11-10 공식 registry의 latest가0.1.3임을 확인했습니다. 벨로그 이력 대조·[이미지 용량 진단](docs/images.md), [티스토리·블로거 진단과 로컬 이력 대조](docs/recovery.md)를 포함합니다. 설치는 [registry 확인·설치 안내](docs/npm-publication.md)를 따릅니다.
 
-v0.1.3 소스에는 [티스토리·블로거 진단과 로컬 이력 대조](docs/recovery.md)를 추가했습니다. npm 공개 이름은 [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail)입니다. [registry 확인·설치 안내](docs/npm-publication.md)를 따르며 설정 변경과 실제 공개는 구분합니다.
+[Unreleased 변경 기록](CHANGELOG.md)은 공개 이후의 소스 변경입니다. 이미 공개된0.1.3배포물에 소급 포함되지 않습니다. GitHub릴리스·npm배포·실제 블로그 발행은 각각 구분합니다.
 
-**v0.1.0은 공개된 실험적 GitHub 사전 릴리스입니다.** 지정 원고 검수에서는 벨로그·티스토리 한국어 글과 블로거 영문 글의 공개 발행, 같은ID 수정·재조회, 데스크톱 이미지 표시·클릭을 확인했습니다. 이는 당시 검수 증거이며 현재 게시 언어나 내용을 보장하는 설명은 아닙니다. Node22/24의 macOS·Linux·Windows 오프라인CI도 통과했습니다. 모든OS의 실제 로그인이나 미지원 기능까지 검증한 것은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](docs/stage7-status.md)을 확인해 주세요.
+**v0.1.0은 공개된 실험적 GitHub 사전 릴리스입니다.** 지정 원고 검수에서는 벨로그·티스토리 한국어 글과 블로거 영문 글의 공개 발행, 같은ID 수정·재조회, 데스크톱 이미지 표시·클릭을 확인했습니다. 이는 당시 검수 증거이며 현재 게시 언어나 내용을 보장하는 설명은 아닙니다. Node22/24의 macOS·Linux·Windows 오프라인CI도 통과했습니다. 모든OS의 실제 로그인이나 미지원 기능까지 검증한 것은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](https://github.com/kyuob/postrail/blob/main/docs/stage7-status.md)을 확인해 주세요.
 
 [English README](README.md) · [설치](docs/installation.md) · [로그인](docs/login.md) · [FAQ](docs/faq.md)
 
@@ -53,7 +53,7 @@ Tistory 임시저장, Blogger 개별 private 글·로컬 이미지 업로드는 
 ## 문서와 참여
 
 - [공통 전송과 복구](docs/publish.md), [원고 형식·오프라인 CLI](docs/offline-cli.md)
-- [실계정 검증 결과](docs/bundled-validation-results.md), [로드맵](docs/roadmap.md)
+- [실계정 검증 결과](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation-results.md), [로드맵](https://github.com/kyuob/postrail/blob/main/docs/roadmap.md)
 - [기여 방법](CONTRIBUTING.md), [보안 제보](SECURITY.md), [변경 기록](CHANGELOG.md)
 
 라이선스는 [MIT](LICENSE)이며 [외부 의존성 고지](docs/third-party-notices.md)를 함께 제공합니다. 패키지 공개와 릴리스는 별도 단계입니다.

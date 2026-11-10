@@ -2,9 +2,9 @@
 
 Write once. Publish across your blogs.
 
-Experimental [v0.1.2](docs/release-0.1.2.md) adds Velog recovery, [image diagnostics](docs/images.md), isolated global-install checks and release verification. npm publication remains separate.
+Experimental **v0.1.3 is published on npm** as [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail), with Tistory/Blogger [inspection and local reconciliation](docs/recovery.md), Velog recovery and [image diagnostics](docs/images.md). The official registry reported `latest: 0.1.3` on 2026-11-10. Follow the [installation and registry verification guide](docs/npm-publication.md).
 
-The v0.1.3 source adds [Tistory/Blogger inspection and local reconciliation](docs/recovery.md) and prepares public npm distribution as [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail). Follow the [registry verification and installation guide](docs/npm-publication.md); package configuration alone is not publication evidence.
+The [Unreleased changelog](CHANGELOG.md) describes later source changes; those are not included in the already published v0.1.3 archive. GitHub releases, npm distribution and actual blog publishing remain separate states.
 
 [한국어](README.ko.md) · [Installation](docs/installation.md) · [Login](docs/login.md) · [FAQ](docs/faq.md) · [Support matrix](docs/support.md)
 
@@ -44,7 +44,7 @@ All five commands support `--json`. See the [offline CLI guide](docs/offline-cli
 
 `node dist/cli.js keyflow check examples/article.md --json` runs the pinned official CLI's actual offline dry-run. Explicit `keyflow login`, `keyflow push --account <name> --confirm`, and local `keyflow status` commands are also implemented. Uploads preserve the source article, keep a local post ID journal, and block automatic retry after an uncertain result. See the [KeyFlow guide](docs/keyflow.md) before using commands that authenticate or send content.
 
-See [live acceptance results and limits](docs/live-validation.md) for the scoped test facts. Additional KeyFlow verification is closed. The common publish command reuses the existing adapter without adding KeyFlow-specific verification.
+See [live acceptance results and limits](https://github.com/kyuob/postrail/blob/main/docs/live-validation.md) for the scoped test facts. Additional KeyFlow verification is closed. The common publish command reuses the existing adapter without adding KeyFlow-specific verification.
 
 ## Experimental Google Blogger adapter
 
@@ -56,7 +56,7 @@ Run `node dist/cli.js velog check examples/velog.md --json` offline. Explicit `v
 
 ## Experimental Tistory adapter
 
-`node dist/cli.js tistory check examples/tistory.md --json` runs offline. Explicit `tistory login --blog NAME --blog-id ID` opens ordinary Chrome in its dedicated profile on macOS. After login, quit that Chrome app to verify the saved blog session. `tistory push ARTICLE --blog NAME --blog-id ID --confirm` creates or updates a saved post ID using Tistory's internal management interface. Markdown is rendered to HTML; uploads register platform attachment references. Draft input is rejected rather than converted to a private post. Read the [Tistory guide](docs/tistory.md) for commands and recovery, and [actual validation results](docs/bundled-validation-results.md) for verified scope. `bun run check:tistory` checks fixtures without account access.
+`node dist/cli.js tistory check examples/tistory.md --json` runs offline. Explicit `tistory login --blog NAME --blog-id ID` opens ordinary Chrome in its dedicated profile on macOS. After login, quit that Chrome app to verify the saved blog session. `tistory push ARTICLE --blog NAME --blog-id ID --confirm` creates or updates a saved post ID using Tistory's internal management interface. Markdown is rendered to HTML; uploads register platform attachment references. Draft input is rejected rather than converted to a private post. Read the [Tistory guide](docs/tistory.md) for commands and recovery, and [actual validation results](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation-results.md) for verified scope. `bun run check:tistory` checks fixtures without account access.
 
 ## Common publishing
 
@@ -90,11 +90,11 @@ All selected targets pass offline capability checks before sequential sends. Jou
 
 Platform support is a goal, not a claim that every platform currently exposes a suitable public API. Document limitations before implementing a connector.
 
-See the [implementation roadmap](docs/roadmap.md) and [source reference assessment](docs/references.md) for remaining adapter work. KeyFlow acceptance is settled; development continues on the remaining platforms and common publishing workflow.
+See the [implementation roadmap](https://github.com/kyuob/postrail/blob/main/docs/roadmap.md) and [source reference assessment](https://github.com/kyuob/postrail/blob/main/docs/references.md) for remaining adapter work. KeyFlow acceptance is settled; development continues on the remaining platforms and common publishing workflow.
 
 ## Contributing
 
-See [CONTRIBUTING](CONTRIBUTING.md), [SECURITY](SECURITY.md), [CHANGELOG](CHANGELOG.md) and the [stage7 verification record](docs/stage7-status.md). Never commit credentials, browser sessions or personal drafts. Describe the problem and the verification scope in your pull request.
+See [CONTRIBUTING](CONTRIBUTING.md), [SECURITY](SECURITY.md), [CHANGELOG](CHANGELOG.md) and the [stage7 verification record](https://github.com/kyuob/postrail/blob/main/docs/stage7-status.md). Never commit credentials, browser sessions or personal drafts. Describe the problem and the verification scope in your pull request.
 
 ## License
 

@@ -8,7 +8,7 @@ export async function velogCommand(args) {
   const [action, ...rest] = args;
   if (!["check", "status", "login", "push", "get", 'inspect', 'reconcile'].includes(action)) fail("INVALID_ARGUMENT", "Use velog check, status, login, push, get, inspect or reconcile.");
   const recovery = ['inspect', 'reconcile'].includes(action);
-  const allowed = action === "login" ? ["--account", "--diagnostics"] : ["--json", "--config", ...(action !== "check" ? ["--account"] : []), ...(action === "push" ? ["--confirm"] : []), ...(recovery ? ['--published-to'] : []), ...(action === 'reconcile' ? ['--confirm', '--review', '--accept-tags'] : [])];
+  const allowed = action === "login" ? ["--account", "--diagnostics", "--chrome-path"] : ["--json", "--config", ...(action !== "check" ? ["--account"] : []), ...(action === "push" ? ["--confirm"] : []), ...(recovery ? ['--published-to'] : []), ...(action === 'reconcile' ? ['--confirm', '--review', '--accept-tags'] : [])];
   const options = {}; let file;
   for (let i = 0; i < rest.length; i++) {
     const argument = rest[i];
@@ -22,7 +22,7 @@ export async function velogCommand(args) {
   if (action !== "check") velogAccount(options["--account"]);
   if (action === "login") {
     console.error(`Sign into Velog as @${options["--account"]} in the dedicated Postrail Chrome window. No password or token is needed in this terminal.`);
-    return loginVelog(options["--account"], undefined, { diagnostics: !!options["--diagnostics"] });
+    return loginVelog(options["--account"], undefined, { diagnostics: !!options["--diagnostics"], chromePath: options['--chrome-path'] });
   }
   if (!file) fail("INVALID_ARGUMENT", "An article path is required.");
   if (action === "push" && !options["--confirm"]) fail("VELOG_CONFIRM_REQUIRED", "Pass --confirm after reviewing the article, account and visibility.");

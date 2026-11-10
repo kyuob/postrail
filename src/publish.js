@@ -8,7 +8,7 @@ import { tistoryTarget } from './tistory-client.js';
 import { checkTistory, pushTistory, statusTistory } from './tistory.js';
 import { accountName as bloggerAccount, numericId } from './blogger-client.js';
 import { checkBlogger, pushBlogger, statusBlogger } from './blogger.js';
-import { accountName as keyflowAccount, pushKeyflow } from './keyflow.js';
+import { accountName as keyflowAccount, pushKeyflow, statusKeyflow } from './keyflow.js';
 
 function object(value, allowed) {
   if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(k => !allowed.includes(k))) fail('PUBLISH_DESTINATIONS_INVALID', 'Destinations must contain only the documented account and blog fields; never include credentials.');
@@ -34,7 +34,7 @@ const adapters = {
   tistory: { check: checkTistory, push: (a, d, cwd) => pushTistory(a, tistoryTarget(d.blog, d.blogId), cwd, true), status: (a, d, cwd) => statusTistory(a, tistoryTarget(d.blog, d.blogId), cwd) },
   blogger: { check: checkBlogger, push: (a, d, cwd) => pushBlogger(a, d.account, d.blogId, cwd, true), status: (a, d, cwd) => statusBlogger(a, d.account, d.blogId, cwd) },
   // Do not run the official KeyFlow CLI during common offline preflight.
-  keyflow: { check: () => ({ blockers: [] }), push: (a, d, cwd) => pushKeyflow(a, d.account, cwd, true) },
+  keyflow: { check: () => ({ blockers: [] }), push: (a, d, cwd) => pushKeyflow(a, d.account, cwd, true), status: (a, d, cwd) => statusKeyflow(a, d.account, cwd), localOnly: true },
 };
 const validSavedId = value => typeof value === 'string' && /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,199}$/.test(value);
 function localOutcome(adapter, article, destination, cwd) {
@@ -42,10 +42,11 @@ function localOutcome(adapter, article, destination, cwd) {
   // This is an offline journal read, not an extra authentication/readback attempt.
   try {
     const state = adapter.status?.(article, destination, cwd)?.state;
-    if (!state || !['unknown', 'pending', 'succeeded', 'not_submitted'].includes(state.status)
+    if (!state || !['unknown', 'pending', 'succeeded', 'not_submitted', 'failed'].includes(state.status)
       || state.postId !== undefined && !validSavedId(state.postId)
       || state.status === 'not_submitted' && state.postId !== undefined || state.status === 'succeeded' && !state.postId) throw Error('Invalid local outcome');
-    return { localStatus: state.status, ...(state.postId ? { postId: state.postId } : {}), nextAction: state.status === 'not_submitted' ? 'review_inputs' : 'inspect_remote' };
+    const nextAction = state.status === 'not_submitted' || state.status === 'failed' && !state.postId ? 'review_inputs' : adapter.localOnly ? 'inspect_local_state' : 'inspect_remote';
+    return { localStatus: state.status, ...(state.postId ? { postId: state.postId } : {}), nextAction };
   } catch { /* Missing/corrupt storage must not hide prior target results. */ }
   return { localStatus: 'unavailable', nextAction: 'inspect_local_state' };
 }

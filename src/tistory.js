@@ -47,9 +47,9 @@ export function statusTistory(article, target, cwd) {
   return { ok: true, command: 'tistory status', offline: true, blog: target.blog, blogId: target.blogId, articleId: article.meta.id,
     state: state ? { status: state.status, postId: state.postId, contentHash: state.contentHash } : { status: 'not_submitted' } };
 }
-export async function loginTistory(target, session = withTistorySession) {
+export async function loginTistory(target, session = withTistorySession, { chromePath } = {}) {
   validateTarget(target);
-  return session(target, async (_client, actual) => { verifyIdentity(actual, target); return { ok: true, command: 'tistory login', blog: target.blog, blogId: target.blogId, liveVerified: false }; }, { login: true });
+  return session(target, async (_client, actual) => { verifyIdentity(actual, target); return { ok: true, command: 'tistory login', blog: target.blog, blogId: target.blogId, liveVerified: false }; }, { login: true, ...(chromePath === undefined ? {} : { chromePath }) });
 }
 export async function getTistory(article, target, cwd, session = withTistorySession) {
   validateTarget(target);

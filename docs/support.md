@@ -31,6 +31,6 @@ KeyFlow의 자세한 이미지·상태 계약은 [기존 가이드](keyflow.md)�
 | Blogger 인증 저장 | 지원·실계정 확인 | 구현·실계정 미검증 | ACL 검증 전 미지원 |
 | KeyFlow 인증 | 기존 공식 CLI 계약 | 공식 CLI 제약 확인 필요 | 공식 CLI 제약 확인 필요 |
 
-Node22/24·세OS의 오프라인6조합과 Linux 패키지2조합이 실제CI에서 통과했다. 실행 기록은 [7단계 검수 기록](stage7-status.md)을 확인한다. 이 결과를 세OS의 실제 브라우저 로그인 성공으로 확대하지 않는다.
+Node22/24·세OS의 오프라인6조합과 Linux 패키지2조합이 실제CI에서 통과했다. 실행 기록은 [7단계 검수 기록](https://github.com/kyuob/postrail/blob/main/docs/stage7-status.md)을 확인한다. 이 결과를 세OS의 실제 브라우저 로그인 성공으로 확대하지 않는다.
 
-공통 `publish`는 선택한 대상의 공개 상태를 그대로 사용한다. 호환되지 않는 조합은 전송 전에 거절한다. [실계정 개별 검증](bundled-validation-results.md), 공통 다중 전송과 [실제 공개 글 검수](publication-fable52.md)를 구분한다. 공개 검수는 macOS Chrome의 지정 원고와 이미지12개·추천 이미지 클릭에 한정된다. 실기기 모바일, 만료 후 인증 갱신과 공개→초안 되돌리기의 실계정 검증은 별도 범위다.
+공통 `publish`는 선택한 대상의 공개 상태를 그대로 사용한다. 호환되지 않는 조합은 전송 전에 거절한다. [실계정 개별 검증](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation-results.md), 공통 다중 전송과 [실제 공개 글 검수](https://github.com/kyuob/postrail/blob/main/docs/publication-fable52.md)를 구분한다. 공개 검수는 macOS Chrome의 지정 원고와 이미지12개·추천 이미지 클릭에 한정된다. 실기기 모바일, 만료 후 인증 갱신과 공개→초안 되돌리기의 실계정 검증은 별도 범위다.

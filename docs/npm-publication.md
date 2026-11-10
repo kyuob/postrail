@@ -1,6 +1,10 @@
-# npm 공개 준비와 검수
+# npm 공개 상태와 검수
 
-사용자가 `@kyuob/postrail` 공개를 승인해 v0.1.3부터 `private:false`, `publishConfig.access:public`과 공식 npm 레지스트리를 명시했다. **설정 변경은 공개 완료가 아니다.** 공개 전에는 계정 인증과 범위 소유권을 확인한다. 실제 계정명이 다르면 이름부터 확정하고 문서·검사·패키지를 함께 바꾼다. 비밀번호·토큰·OTP는 저장소·채팅·검수 로그에 넣지 않는다. 공개 여부는 [npm 패키지 페이지](https://www.npmjs.com/package/@kyuob/postrail)와 아래 registry 검수 결과로 판단한다.
+2026-11-10에 [공식 registry 메타데이터](https://registry.npmjs.org/@kyuob%2Fpostrail)를 읽어 `@kyuob/postrail@0.1.3`의 실제 공개와 `latest:0.1.3`을 확인했다. 공개 시각은2026-11-10T12:40:54.791Z다. 당시 배포물은37파일·해제 후1,428,206바이트다. 설정만 보고 추정한 상태가 아니다. 현재 소스의 Unreleased 수정은 그 배포물에 포함되지 않는다.
+
+registry에는2파일·337바이트의 `0.0.0-stage`도 있다. latest가 아니므로 일반 설치 대상으로 선택되지 않는다. 이 검수에서 삭제·사용 중단 표시는 하지 않았다. [npm 삭제 정책](https://docs.npmjs.com/policies/unpublish/)상72시간 이내에도 의존성 조건이 있고,72시간 이후에도 의존성·다운로드·소유자 조건을 충족하면 삭제할 수 있다. 따라서 ‘72시간 이후에는 반드시 deprecate’라는 규칙은 쓰지 않는다. 삭제는 되돌릴 수 없으며 해당 버전 번호를 다시 쓸 수 없으므로 별도 명시 승인과 실행 직전 조건 확인이 필요하다.
+
+다음 릴리스는 계정 인증·범위 소유권·변경된 배포 파일 목록을 확인한 뒤 별도 승인으로 진행한다. 비밀번호·토큰·OTP를 저장소·채팅·검수 로그에 넣지 않는다. 소스 변경만으로 공개 배포물을 바꾸거나 새 버전을 공개하지 않는다.
 
 ## 관리자 배포 순서
 
@@ -12,7 +16,7 @@
 6. `node scripts/verify-npm.mjs ./tested-package.tgz`로 공식 registry의 이름·버전·기본 latest·SHA512와 로컬 파일의 바이트 일치를 확인한다.
 7. `node scripts/package-smoke.mjs --registry`로 공개 버전의 별도 소비자 설치·실행·격리 전역 설치·삭제를 확인한다. 실제 사용자 전역 설치는 변경하지 않는다.
 
-## 사용자 설치 경로 · 공개 확인 후 사용
+## 사용자 설치 경로
 
 ```sh
 bun add -g @kyuob/postrail --ignore-scripts
@@ -20,6 +24,6 @@ postrail --version
 postrail --help
 ```
 
-이 명령은 registry에 공개된 뒤에만 작동한다. 인증 대기 중에는 [GitHub 릴리스 설치](installation.md)를 사용한다. 이름이 같은 다른 프로젝트의 unscoped `postrail` 패키지는 설치하지 않는다.
+공개된0.1.3을 설치하는 명령이다. 다른 버전을 설치할 때는 먼저 registry 상태를 확인한다. [GitHub 릴리스 설치](installation.md)도 선택할 수 있다. 이름이 같은 다른 프로젝트의 unscoped `postrail` 패키지는 설치하지 않는다.
 
 소스 공개·GitHub 릴리스·npm 공개·실제 블로그 전송은 각각 별개 상태다. 복구 기능은 [이력 대조 가이드](recovery.md)의 제한을 따른다.

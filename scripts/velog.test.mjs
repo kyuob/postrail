@@ -11,7 +11,7 @@ import { loadArticle, loadConfig, contentHashForTargets } from '../src/core.js';
 import { inspectVelog, reconcileVelog } from '../src/velog-recovery.js';
 import { checkVelog, pushVelog, statusVelog, getVelog, loginVelog } from '../src/velog.js';
 import { VelogClient, VELOG_GRAPHQL, VELOG_UPLOAD, authDiagnostic } from '../src/velog-client.js';
-import { manualChromeLogin } from '../src/manual-chrome-login.js';
+import { manualChromeLogin, chromeExecutable } from '../src/manual-chrome-login.js';
 import { EventEmitter } from 'node:events';
 import { journalPath, readJournal, saveJournal, locked, digest } from '../src/velog-journal.js';
 import { velogImages, replaceVelogImages } from '../src/velog-images.js';
@@ -371,6 +371,30 @@ test('manual login waits for ordinary Chrome exit with only the isolated profile
   } }).then(() => { finished = true; });
   await Promise.resolve(); assert.equal(finished, false);
   browser.emit('close', 0); await waiting; assert.equal(finished, true);
+});
+test('manual login honors an explicit executable without shell or debug flags', async () => {
+  const chromePath = '/Users/test/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  const browser = new EventEmitter();
+  const waiting = manualChromeLogin('/private/profile', { platform: 'darwin', chromePath, spawnImpl: (binary, args, options) => {
+    assert.equal(binary, chromePath); assert.equal(options.shell, false); assert(args.every(a => !a.startsWith('--remote-debugging'))); return browser;
+  } });
+  browser.emit('close', 0); await waiting;
+  for (const value of ['', 'relative/Google Chrome', '/tmp/not-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\n']) assert.throws(() => chromeExecutable(value), { code: 'INVALID_ARGUMENT' });
+});
+test('login wrapper forwards a Chrome override only when explicitly supplied', async () => {
+  const chromePath = '/Users/test/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  await loginVelog('tester', async (_account, action, options) => { assert.deepEqual(options, { login: true, chromePath }); return action({}, user); }, { chromePath });
+});
+test('Chrome environment selection is shared and explicit paths take precedence', () => {
+  const old = process.env.POSTRAIL_CHROME_PATH;
+  try {
+    process.env.POSTRAIL_CHROME_PATH = '/Users/env/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    assert.equal(chromeExecutable(), process.env.POSTRAIL_CHROME_PATH);
+    const explicit = '/Users/option/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    assert.equal(chromeExecutable(explicit), explicit);
+    process.env.POSTRAIL_CHROME_PATH = 'bad-relative-path';
+    assert.throws(() => chromeExecutable(), { code: 'INVALID_ARGUMENT' });
+  } finally { if (old === undefined) delete process.env.POSTRAIL_CHROME_PATH; else process.env.POSTRAIL_CHROME_PATH = old; }
 });
 test('manual login rejects unsupported platforms and sanitizes process errors', async () => {
   await rejects(() => manualChromeLogin('/profile', { platform: 'win32' }), 'VELOG_LOGIN_UNSUPPORTED');

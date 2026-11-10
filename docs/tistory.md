@@ -6,7 +6,7 @@ v0.1.3 소스의 `tistory inspect`와 `tistory reconcile`은 저장된 글을 �
 
 2026-11-10: 전용 Chrome 로그인, 내부 관리 API의 비공개/공개 글 생성, 저장된 ID의 PUT 수정, 이미지 업로드와 첨부 등록 코드를 구현했다. 공통 CLI·Velog·Tistory 모의 응답 검사 105개가 통과했다. 독립 검토에서 발견한 문자 참조를 통한 플랫폼 치환자 우회는 수정하고 재검토했다.
 
-macOS에서 실제 로그인·비공개 생성·같은ID 수정·재조회·변경 없는 전송 건너뛰기를 확인했다. 이어 지정 원고의 공개 전환·같은ID 수정, 첨부 이미지12개와 추천 이미지2개의 클릭, 문단·설명 간격을 실제Chrome화면에서 확인했다. [초기 실검증](bundled-validation-results.md)과 [공개 검수](publication-fable52.md)를 구분한다. Markdown은HTML로 변환해 저장하며 편집기 모드를 자동 선택하는 방식이 아니다. 명령의 `liveVerified:false`를 모든 기능의 검증 주장으로 바꾸지 않는다. 지원하지 않는 편집기 형식은 중단한다. [공식 Open API는 종료](https://notice.tistory.com/2664)됐으며 과거OAuthAPI를 사용하지 않는다. 내부 인터페이스는 서비스 변경에 영향을 받는다.
+macOS에서 실제 로그인·비공개 생성·같은ID 수정·재조회·변경 없는 전송 건너뛰기를 확인했다. 이어 지정 원고의 공개 전환·같은ID 수정, 첨부 이미지12개와 추천 이미지2개의 클릭, 문단·설명 간격을 실제Chrome화면에서 확인했다. [초기 실검증](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation-results.md)과 [공개 검수](https://github.com/kyuob/postrail/blob/main/docs/publication-fable52.md)를 구분한다. Markdown은HTML로 변환해 저장하며 편집기 모드를 자동 선택하는 방식이 아니다. 명령의 `liveVerified:false`를 모든 기능의 검증 주장으로 바꾸지 않는다. 지원하지 않는 편집기 형식은 중단한다. [공식 Open API는 종료](https://notice.tistory.com/2664)됐으며 과거OAuthAPI를 사용하지 않는다. 내부 인터페이스는 서비스 변경에 영향을 받는다.
 
 ## 명령과 대상
 
@@ -62,6 +62,6 @@ POSIX는 상태 파일과 디렉터리를 fsync한다. 응답 파싱은 8 MiB까
 
 - [MIT 참고 API 문서](https://github.com/kim-se-hee/tistory-mcp/blob/bc9d258730ec9421aa2dfec749c720aa7599949f/docs/api.md), [코드](https://github.com/kim-se-hee/tistory-mcp/blob/bc9d258730ec9421aa2dfec749c720aa7599949f/src/tistory/api.ts): 생성/PUT·상태·HTML 읽기·첨부 규격을 참고해 독립 구현했다.
 - [@itapi-core/mcp-tistory 1.5.3](https://www.npmjs.com/package/@itapi-core/mcp-tistory/v/1.5.3): 설치/실행 없이 공개 배포물의 Config.entry 필드를 확인했다. VM 평가·비밀번호 자동 로그인·재시도는 채택하지 않았다.
-- [조사](references.md), [묶음 실계정 검증 계획](bundled-validation.md).
+- [조사](https://github.com/kyuob/postrail/blob/main/docs/references.md), [묶음 실계정 검증 계획](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation.md).
 
 `bun run check:tistory`는 인증 없이 모의 전송·오류·원본·저널·HTML·이미지 계약을 검사한다. 실계정 검증은 Blogger 구현 후 묶어서 진행한다. KeyFlow 추가 검증은 재개하지 않는다.

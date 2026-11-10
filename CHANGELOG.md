@@ -1,11 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Limit package documentation to an explicit user-guide allowlist. Keep internal review, stage and live-validation evidence in the repository; validate that shipped Markdown links resolve inside the archive or point to the repository.
+- Add macOS Velog/Tistory `login --chrome-path` and `POSTRAIL_CHROME_PATH` for nonstandard Google Chrome installations. Use the same executable for manual login and subsequent profile verification; no shell execution, automatic authentication or credential export.
+- Connect the common publish failure report to existing local status, including adapters with local-only inspection. Retain saved IDs, failed/unknown distinctions and no-retry behavior without extra remote calls.
+- Correct current publication documentation from official registry metadata. No registry deletion, deprecation, new release or live blog write is performed by these source changes.
+
 ## 0.1.3 — npm distribution and expanded recovery
 
 - Extend explicit inspect/reconcile to Tistory and Blogger: bind saved IDs, source targets, body, visibility and ownership; tag differences require separate acceptance. Preserve exact private backups and locks; never write remote posts or recreate missing IDs.
 - Verify Tistory local-image CDN bytes after complete body reconstruction. Keep Blogger private/local images and Tistory draft slots unsupported.
 - Preserve canonical approved-source hashes for unchanged skips after reconciliation; remote conflicts remain checked first.
-- Prepare a public scoped npm package with explicit registry/access and private:false following user approval. Publication requires verified namespace ownership, authentication, passing CI and registry readback.
+- Published the public scoped npm package as `@kyuob/postrail@0.1.3`; the official registry records publication at2026-11-10T12:40:54.791Z and latest0.1.3. Explicit registry/access and private:false follow user approval. See the npm guide for read-only verification; later Unreleased changes are not part of that archive.
 - Add registry readback/integrity verification, opt-in clean registry installation and dry-run publication checks. No real blog or user-journal recovery is performed.
 
 ## 0.1.2 — 2026-11-10
@@ -52,4 +59,4 @@ First experimental GitHub release, distributed as `kyuob-postrail-0.1.0.tgz` wit
 
 ### Verification and limitations
 
-Scoped draft/private flows and subsequent public Velog/Tistory/Blogger saved-ID updates passed. The approved public article retained16 sections and12 images per language; desktop image rendering and six promotional-image clicks were observed.167 publishing regressions and all9jobs in the Node22/24/macOS/Linux/Windows CI passed before release preparation. See [stage7](docs/stage7-status.md), [public acceptance](docs/publication-fable52.md) and [release notes](docs/release-0.1.0.md). Mobile, allOS authentication, expired-token live recovery and live public-to-draft reversal remain outside that proof. KeyFlow acceptance remains closed.
+Scoped draft/private flows and subsequent public Velog/Tistory/Blogger saved-ID updates passed. The approved public article retained16 sections and12 images per language; desktop image rendering and six promotional-image clicks were observed.167 publishing regressions and all9jobs in the Node22/24/macOS/Linux/Windows CI passed before release preparation. See [stage7](https://github.com/kyuob/postrail/blob/main/docs/stage7-status.md), [public acceptance](https://github.com/kyuob/postrail/blob/main/docs/publication-fable52.md) and [release notes](docs/release-0.1.0.md). Mobile, allOS authentication, expired-token live recovery and live public-to-draft reversal remain outside that proof. KeyFlow acceptance remains closed.

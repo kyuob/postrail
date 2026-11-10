@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { verifyReleaseMetadata, verifyReleaseBytes } from './release-verification.mjs';
-import { allowedPackageFile } from './package-files.mjs';
+import { allowedPackageFile, userGuideFiles } from './package-files.mjs';
+import { readFileSync } from 'node:fs';
 import { verifyNpmArtifact } from './npm-verification.mjs';
 
 test('release verification binds prerelease assets and CI to exact tag commit', () => {
@@ -17,7 +18,10 @@ test('release verification binds prerelease assets and CI to exact tag commit', 
 });
 test('shared package allowlist rejects credentials, histories and traversal', () => {
   for (const entry of ['package/dist/cli.js', 'package/docs/images.md', 'package/package.json']) assert(allowedPackageFile(entry));
-  for (const entry of ['package/.env', 'package/.postrail/state.json', 'package/../secret', '/etc/passwd', 'package/docs/deep/secret.md']) assert(!allowedPackageFile(entry));
+  for (const entry of ['package/.env', 'package/.postrail/state.json', 'package/../secret', '/etc/passwd', 'package/docs/deep/secret.md', 'package/docs/quality-review-20261110.md', 'package/docs/stage7-status.md', 'package/docs/publication-fable52.md', 'package/docs/live-validation.md', 'package/docs/bundled-validation-results.md', 'package/docs/future-internal-notes.md']) assert(!allowedPackageFile(entry));
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)));
+  assert.deepEqual(pkg.files.filter(name => name.startsWith('docs/')).sort(), [...userGuideFiles].sort());
+  assert(!pkg.files.includes('docs'));
 });
 test('npm readback binds package identity, official URL, integrity and tested archive', () => {
   const bytes = Buffer.from('tested archive'), name = '@kyuob/postrail', version = '0.1.3';

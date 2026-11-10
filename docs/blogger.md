@@ -2,7 +2,7 @@
 
 v0.1.3 소스의 `blogger inspect`와 `blogger reconcile`은 사용자·ADMIN 블로그·저장 ID를 조회하고 명시적으로 로컬 이력을 대조한다. 원격 글은 쓰지 않는다. [복구 순서와 제한](recovery.md)을 참고한다. 새 기능은 합성 응답으로 검증했으며 아래 과거 실계정 증거와 구분한다.
 
-대상ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID조회·PATCH수정·발행/초안 전환을 구현했다. 2026-11-10 지정 계정에서 실제OAuth·관리자 선택·초안 생성·같은ID 수정·인증조회·변경 없는 전송 건너뛰기를 확인했다. 이어 영문 원고의 실제 공개 전환·같은ID 수정과 공개CDN이미지12개·추천 이미지2개의 클릭을 macOS Chrome에서 확인했다. [초기 실검증](bundled-validation-results.md)과 [공개 검수](publication-fable52.md)를 구분한다. Cloud설정은 바꾸지 않았으며 실제 만료 갱신·공개→초안 되돌리기·충돌API의 실계정 동작은 미검증이다.
+대상ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID조회·PATCH수정·발행/초안 전환을 구현했다. 2026-11-10 지정 계정에서 실제OAuth·관리자 선택·초안 생성·같은ID 수정·인증조회·변경 없는 전송 건너뛰기를 확인했다. 이어 영문 원고의 실제 공개 전환·같은ID 수정과 공개CDN이미지12개·추천 이미지2개의 클릭을 macOS Chrome에서 확인했다. [초기 실검증](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation-results.md)과 [공개 검수](https://github.com/kyuob/postrail/blob/main/docs/publication-fable52.md)를 구분한다. Cloud설정은 바꾸지 않았으며 실제 만료 갱신·공개→초안 되돌리기·충돌API의 실계정 동작은 미검증이다.
 
 ```sh
 node dist/cli.js blogger check examples/blogger.md --json
@@ -55,7 +55,7 @@ POSIX 파일·디렉터리를 fsync하며 Google JSON 응답은 스트림을 읽
 
 ## 검사와 다음 단계
 
-`bun run check:blogger`는 공통 CLI·Velog·Tistory·Blogger의 모의 응답 검사와 빌드/smoke를 실행한다. OAuth 시험은 가짜 자격증명과 로컬 loopback만 쓰며 Google 계정에 접근하지 않는다. [묶음 실계정 검증 계획](bundled-validation.md)에 따라 계정·정확한 원고·상태를 사용자가 한 번에 확인한 뒤 실제 검증한다. KeyFlow 추가 검증은 재개하지 않는다.
+`bun run check:blogger`는 공통 CLI·Velog·Tistory·Blogger의 모의 응답 검사와 빌드/smoke를 실행한다. OAuth 시험은 가짜 자격증명과 로컬 loopback만 쓰며 Google 계정에 접근하지 않는다. [묶음 실계정 검증 계획](https://github.com/kyuob/postrail/blob/main/docs/bundled-validation.md)에 따라 계정·정확한 원고·상태를 사용자가 한 번에 확인한 뒤 실제 검증한다. KeyFlow 추가 검증은 재개하지 않는다.
 
 ## 근거
 
