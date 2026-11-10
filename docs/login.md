@@ -46,9 +46,9 @@ Google이 동의를 차단하면 에러 종류를 확인한다. Desktop client, 
 
 기존 [KeyFlow 가이드](keyflow.md)의 공식 CLI 로그인과 명시적 계정 이름을 그대로 사용한다. 이 문서 작업은 추가 인증·검증·전송을 수행하지 않는다. 계정 선택은 `postrail keyflow login --account MY_ACCOUNT`, 공통 대상 파일에는 같은 `account`를 사용한다.
 
-## Chrome이 다른 위치에 설치된 경우 · Unreleased
+## Chrome이 다른 위치에 설치된 경우 · v0.1.4
 
-공개된0.1.3이 아닌 현재 소스의 기능이다. macOS에서 기본 `/Applications/Google Chrome.app` 대신 본인이 설치한 Google Chrome 실행 파일을 지정할 수 있다. 앱 폴더가 아니라 앱 내부 실행 파일의 절대 경로를 사용한다. 빈 문자열·상대 경로·제어 문자가 있는 값은 거절한다.
+v0.1.4부터 지원한다. macOS에서 기본 `/Applications/Google Chrome.app` 대신 본인이 설치한 Google Chrome 실행 파일을 지정할 수 있다. 앱 폴더가 아니라 앱 내부 실행 파일의 절대 경로를 사용한다. 빈 문자열·상대 경로·제어 문자가 있는 값은 거절한다.
 
 ```sh
 postrail velog login --account MY_ACCOUNT --chrome-path "$HOME/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"

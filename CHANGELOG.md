@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.4 — 2026-11-10
 
 - Limit package documentation to an explicit user-guide allowlist. Keep internal review, stage and live-validation evidence in the repository; validate that shipped Markdown links resolve inside the archive or point to the repository.
 - Add macOS Velog/Tistory `login --chrome-path` and `POSTRAIL_CHROME_PATH` for nonstandard Google Chrome installations. Use the same executable for manual login and subsequent profile verification; no shell execution, automatic authentication or credential export.
 - Connect the common publish failure report to existing local status, including adapters with local-only inspection. Retain saved IDs, failed/unknown distinctions and no-retry behavior without extra remote calls.
-- Correct current publication documentation from official registry metadata. No registry deletion, deprecation, new release or live blog write is performed by these source changes.
+- Correct publication documentation from official registry metadata. This patch does not alter the published0.1.3 archive or perform live blog writes. Exact release verification is recorded separately from source changes.
 
 ## 0.1.3 — npm distribution and expanded recovery
 

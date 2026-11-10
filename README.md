@@ -2,9 +2,9 @@
 
 Write once. Publish across your blogs.
 
-Experimental **v0.1.3 is published on npm** as [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail), with Tistory/Blogger [inspection and local reconciliation](docs/recovery.md), Velog recovery and [image diagnostics](docs/images.md). The official registry reported `latest: 0.1.3` on 2026-11-10. Follow the [installation and registry verification guide](docs/npm-publication.md).
+Experimental **v0.1.4** adds an explicit documentation package allowlist, configurable macOS Chrome paths and common publishing's local-only recovery hints. It retains Tistory/Blogger [inspection and local reconciliation](docs/recovery.md), Velog recovery and [image diagnostics](docs/images.md). Install the scoped [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail) package using the [installation and registry verification guide](docs/npm-publication.md).
 
-The [Unreleased changelog](CHANGELOG.md) describes later source changes; those are not included in the already published v0.1.3 archive. GitHub releases, npm distribution and actual blog publishing remain separate states.
+See the [changelog](CHANGELOG.md) for the patch details. Earlier v0.1.3 archives are unchanged. GitHub releases, npm distribution and actual blog publishing remain separate states; source version alone is not publication evidence.
 
 [한국어](README.ko.md) · [Installation](docs/installation.md) · [Login](docs/login.md) · [FAQ](docs/faq.md) · [Support matrix](docs/support.md)
 

@@ -24,4 +24,4 @@ Authentication, permissions, remote writes, image references and state recovery 
 
 Use the bug template with version/OS/runtime, a fixed error code and a fake reproducer. Do not include entire environment dumps, magic links, OAuth files, tokens, signed image URLs, browser profiles or personal Markdown. Security-sensitive reports follow [SECURITY.md](SECURITY.md).
 
-Documentation changes should keep English and [Korean onboarding](README.ko.md) aligned. Explain observed behavior without turning a hypothesis into a confirmed cause. npm v0.1.3 is published; later source changes remain unreleased until a separately approved and verified release.
+Documentation changes should keep English and [Korean onboarding](README.ko.md) aligned. Explain observed behavior without turning a hypothesis into a confirmed cause. Each release requires separate approval, exact-commit CI and registry verification; a version bump or GitHub push does not prove npm publication.

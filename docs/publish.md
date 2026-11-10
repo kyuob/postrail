@@ -28,11 +28,11 @@ The v0.1.2 stability changes added local recovery hints to a failed result witho
 
 | Added field | Meaning |
 | --- | --- |
-| `localStatus` | A local journal snapshot: `unknown`, `pending`, `succeeded`, `not_submitted`, or `unavailable`; Unreleased also retains `failed` |
+| `localStatus` | A local journal snapshot: `unknown`, `pending`, `succeeded`, `not_submitted`, or `unavailable`; v0.1.4 also retains `failed` |
 | `postId` (optional) | An ID retained in the validated local journal; its presence does not prove that this invocation succeeded remotely |
-| `nextAction` | `inspect_remote` for saved outcomes with supported remote inspection; `review_inputs` for not_submitted (and Unreleased failed without an ID); `inspect_local_state` for unavailable or local-only inspection |
+| `nextAction` | `inspect_remote` for saved outcomes with supported remote inspection; `review_inputs` for not_submitted (and v0.1.4 failed without an ID); `inspect_local_state` for unavailable or local-only inspection |
 
-These hints add no remote calls, automatic retry or reconciliation. A local `succeeded` snapshot can describe an earlier saved operation while the current invocation failed. `nextAction` is guidance, not a new CLI recovery command. The Unreleased source connects KeyFlow's existing local status reader: failures retain available local status and saved IDs, with local inspection guidance instead of implying remote `get` exists. This adds no official-CLI invocation, live verification or new KeyFlow acceptance work. Published v0.1.3 common KeyFlow failures still report `unavailable`.
+These hints add no remote calls, automatic retry or reconciliation. A local `succeeded` snapshot can describe an earlier saved operation while the current invocation failed. `nextAction` is guidance, not a new CLI recovery command. v0.1.4 connects KeyFlow's existing local status reader: failures retain available local status and saved IDs, with local inspection guidance instead of implying remote `get` exists. This adds no official-CLI invocation, live verification or new KeyFlow acceptance work. Published v0.1.3 common KeyFlow failures still report `unavailable`.
 
 Success on one target is retained when another fails. The command does not roll back, delete, log in again, retry a write or try another mutation schema. Each adapter keeps its existing account/blog/article journal and remote ID. Velog/Tistory/Blogger check remote content before skipping unchanged input and stop on detected remote edits. KeyFlow skips from its local hash and does not detect remote manual edits; updates can overwrite them, and remote `get` is unavailable. An unknown write stays blocked until the remote result is reconciled. Inspect platform `status` and supported `get` commands or the service's own management screen, then retry only resolved targets with `--to`. A user-deleted remote article is not silently recreated.
 

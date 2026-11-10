@@ -2,9 +2,9 @@
 
 Markdown 하나를 Velog·Tistory·KeyFlow·Google Blogger로 보내는 오픈소스 CLI입니다.
 
-**v0.1.3은 [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail)로 npm에 공개됐습니다.** 2026-11-10 공식 registry의 latest가0.1.3임을 확인했습니다. 벨로그 이력 대조·[이미지 용량 진단](docs/images.md), [티스토리·블로거 진단과 로컬 이력 대조](docs/recovery.md)를 포함합니다. 설치는 [registry 확인·설치 안내](docs/npm-publication.md)를 따릅니다.
+**v0.1.4**는 배포 문서 허용 목록, macOS Chrome 실행 경로 지정, 공통 전송의 로컬 상태 안내를 추가합니다. 벨로그 이력 대조·[이미지 용량 진단](docs/images.md), [티스토리·블로거 진단과 로컬 이력 대조](docs/recovery.md)도 포함합니다. [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail) 설치는 [registry 확인·설치 안내](docs/npm-publication.md)를 따릅니다.
 
-[Unreleased 변경 기록](CHANGELOG.md)은 공개 이후의 소스 변경입니다. 이미 공개된0.1.3배포물에 소급 포함되지 않습니다. GitHub릴리스·npm배포·실제 블로그 발행은 각각 구분합니다.
+패치 내용은 [변경 기록](CHANGELOG.md)을 확인하세요. 기존0.1.3배포물은 바뀌지 않습니다. GitHub릴리스·npm배포·실제 블로그 발행은 각각 구분하며, 소스의 버전 번호만으로 공개 완료를 판단하지 않습니다.
 
 **v0.1.0은 공개된 실험적 GitHub 사전 릴리스입니다.** 지정 원고 검수에서는 벨로그·티스토리 한국어 글과 블로거 영문 글의 공개 발행, 같은ID 수정·재조회, 데스크톱 이미지 표시·클릭을 확인했습니다. 이는 당시 검수 증거이며 현재 게시 언어나 내용을 보장하는 설명은 아닙니다. Node22/24의 macOS·Linux·Windows 오프라인CI도 통과했습니다. 모든OS의 실제 로그인이나 미지원 기능까지 검증한 것은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](https://github.com/kyuob/postrail/blob/main/docs/stage7-status.md)을 확인해 주세요.
 
