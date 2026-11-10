@@ -1,4 +1,4 @@
-import { fail } from "./core.js";
+import { fail, contentHashForTargets } from "./core.js";
 import { digest, journalPath, readJournal, saveJournal, locked } from "./velog-journal.js";
 import { velogAccount, withVelogSession } from "./velog-client.js";
 import { velogImages, replaceVelogImages } from "./velog-images.js";
@@ -72,7 +72,7 @@ export async function pushVelog(article, account, cwd, confirmed, session = with
         current = validatePost(await client.read(old.postId), user);
         if (current.id !== old.postId) fail("VELOG_RESPONSE_INVALID", "Velog returned a different post ID.");
         if (remoteHash(current) !== old.remoteHash) fail("VELOG_REMOTE_CONFLICT", "The remote article was changed outside Postrail. Resolve that conflict before updating.");
-        if (old.contentHash === article.contentHash) return { ok: true, command: "velog push", skipped: true, ...identity(current, account), liveVerified: false };
+        if (old.contentHash === article.contentHash || old.recoveredContentHash === contentHashForTargets(article, ['velog'])) return { ok: true, command: "velog push", skipped: true, ...identity(current, account), liveVerified: false };
       }
       const state = { version: 1, articleId: article.meta.id, account, ownerId: user.id, status: "pending", contentHash: article.contentHash, postId: old?.postId };
       saveJournal(file, state);
@@ -111,3 +111,5 @@ export async function pushVelog(article, account, cwd, confirmed, session = with
     });
   });
 }
+
+export { validateUser as validateVelogUser, validatePost as validateVelogPost, remoteHash as velogRemoteHash, flags as velogVisibilityFlags };

@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
 import { test } from 'node:test';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, symlinkSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { loadArticle, loadConfig } from '../src/core.js';
+import { loadArticle, loadConfig, contentHashForTargets } from '../src/core.js';
+import { inspectVelog, reconcileVelog } from '../src/velog-recovery.js';
 import { checkVelog, pushVelog, statusVelog, getVelog, loginVelog } from '../src/velog.js';
 import { VelogClient, VELOG_GRAPHQL, VELOG_UPLOAD, authDiagnostic } from '../src/velog-client.js';
 import { manualChromeLogin } from '../src/manual-chrome-login.js';
 import { EventEmitter } from 'node:events';
-import { journalPath, readJournal, saveJournal, locked } from '../src/velog-journal.js';
+import { journalPath, readJournal, saveJournal, locked, digest } from '../src/velog-journal.js';
 import { velogImages, replaceVelogImages } from '../src/velog-images.js';
 import { equivalentTags } from '../src/tags.js';
 
@@ -49,6 +52,168 @@ function server() {
   return { state, client, session };
 }
 const rejects = (fn, code) => assert.rejects(fn, error => error.code === code);
+
+async function unresolved(t, body = 'PRIVATE_BODY_SENTINEL\n', visibility = 'public') {
+  const f = fixture(t, visibility, body), s = server(), read = s.client.read;
+  s.client.read = async id => { s.state.post.tags = ['개발', 'Q&A']; return read(id); };
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, s.session), 'VELOG_READBACK_FAILED');
+  return { f, s, file: journalPath(f.dir, 'tester', 'velog-test', false) };
+}
+test('recovery inspection is reviewable and leaves journal bytes/files unchanged', async t => {
+  const { f, s, file } = await unresolved(t), before = readFileSync(file), files = readdirSync(path.dirname(file));
+  const r = await inspectVelog(f.article(), 'tester', f.dir, s.session);
+  assert.equal(r.canReconcile, true); assert.equal(r.requiresTagAcceptance, true); assert.equal(r.comparisons.body, true); assert.equal(r.comparisons.tags, false);
+  assert.deepEqual(r.tags.actual, ['개발', 'Q&A']); assert.equal(r.visibility.actual, 'public'); assert.match(r.reviewHash, /^[a-f0-9]{64}$/);
+  assert.doesNotMatch(JSON.stringify(r), /PRIVATE_BODY_SENTINEL/); assert.deepEqual(readFileSync(file), before); assert.deepEqual(readdirSync(path.dirname(file)), files);
+  assert.equal(s.state.writes.length, 1); assert.equal(s.state.uploads.length, 0);
+});
+test('reconciliation requires review, confirmation and explicit tag adoption', async t => {
+  const { f, s, file } = await unresolved(t), before = readFileSync(file);
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, {}, () => assert.fail('must not authenticate')), 'VELOG_RECOVERY_CONFIRM_REQUIRED');
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true }, () => assert.fail('must not authenticate')), 'VELOG_RECOVERY_REVIEW_REQUIRED');
+  const review = await inspectVelog(f.article(), 'tester', f.dir, s.session);
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash }, s.session), 'VELOG_RECOVERY_TAG_ACCEPT_REQUIRED');
+  const r = await reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session);
+  assert.equal(r.remoteWritten, false); assert.equal(r.backupVerified, true); assert.equal(r.acceptedTags, true);
+  assert.deepEqual(readFileSync(file + '.backup-' + digest(before) + '.json'), before); assert.equal(f.state().status, 'succeeded');
+  assert.equal((await pushVelog(f.article(), 'tester', f.dir, true, s.session)).skipped, true); assert.equal(s.state.writes.length, 1);
+  s.state.post.body += 'external edit';
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, s.session), 'VELOG_REMOTE_CONFLICT'); assert.equal(s.state.writes.length, 1);
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, () => assert.fail('must not authenticate')), 'VELOG_RECOVERY_STATE_INVALID');
+});
+test('unchanged reviewed post needs no tag-acceptance flag', async t => {
+  const { f, s } = await unresolved(t); s.client.read = async () => ({ ...s.state.post, tags: f.article().meta.tags });
+  const review = await inspectVelog(f.article(), 'tester', f.dir, s.session); assert.equal(review.requiresTagAcceptance, false);
+  assert.equal((await reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash }, s.session)).localStatus, 'succeeded');
+});
+for (const visibility of ['private', 'draft']) test(`recovery preserves both exact ${visibility} flags`, async t => {
+  const { f, s } = await unresolved(t, 'body', visibility), review = await inspectVelog(f.article(), 'tester', f.dir, s.session);
+  assert.equal(review.comparisons.visibility, true); assert.equal(review.canReconcile, true);
+  await reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session);
+  assert.equal((await pushVelog(f.article(), 'tester', f.dir, true, s.session)).skipped, true);
+});
+test('a draft label cannot hide an inconsistent private flag', async t => {
+  const { f, s } = await unresolved(t, 'body', 'draft'); s.state.post.is_private = false;
+  const review = await inspectVelog(f.article(), 'tester', f.dir, s.session); assert.equal(review.visibility.actual, 'draft'); assert.equal(review.comparisons.visibility, false);
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session), 'VELOG_RECOVERY_MISMATCH');
+});
+for (const change of ['source', 'remote', 'journal']) test(`stale ${change} review cannot reconcile`, async t => {
+  const { f, s, file } = await unresolved(t); const review = await inspectVelog(f.article(), 'tester', f.dir, s.session);
+  if (change === 'source') writeFileSync(f.file, f.text + 'changed');
+  if (change === 'remote') s.state.post.body += 'changed';
+  if (change === 'journal') writeFileSync(file, readFileSync(file, 'utf8') + '\n');
+  const before = readFileSync(file);
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session), 'VELOG_RECOVERY_STALE');
+  assert.deepEqual(readFileSync(file), before); assert.equal(f.state().status, 'unknown');
+});
+for (const field of ['body', 'title', 'visibility']) test(`tag acceptance cannot bypass ${field} mismatch`, async t => {
+  const { f, s, file } = await unresolved(t);
+  if (field === 'visibility') s.state.post.is_private = true; else s.state.post[field] += 'changed';
+  const review = await inspectVelog(f.article(), 'tester', f.dir, s.session), before = readFileSync(file); assert.equal(review.canReconcile, false);
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session), 'VELOG_RECOVERY_MISMATCH');
+  assert.deepEqual(readFileSync(file), before);
+});
+test('recovery requires the owned saved ID, not a caller-selected post', async t => {
+  const { f, s } = await unresolved(t);
+  for (const post of [{ ...s.state.post, id: 'other' }, { ...s.state.post, user: { ...user, id: 'other' } }]) {
+    s.client.read = async () => post; await rejects(() => inspectVelog(f.article(), 'tester', f.dir, s.session), 'VELOG_RESPONSE_INVALID');
+  }
+  const file = journalPath(f.dir, 'tester', 'velog-test', false), state = readJournal(file, 'tester', 'velog-test'); delete state.postId; saveJournal(file, state);
+  await rejects(() => inspectVelog(f.article(), 'tester', f.dir, () => assert.fail('must not authenticate')), 'VELOG_NO_REMOTE_ID');
+});
+test('backup failure and existing lock preserve unresolved state', async t => {
+  const { f, s, file } = await unresolved(t), review = await inspectVelog(f.article(), 'tester', f.dir, s.session), before = readFileSync(file);
+  writeFileSync(file + '.lock', '');
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, () => assert.fail('must not authenticate')), 'VELOG_LOCKED'); rmSync(file + '.lock');
+  writeFileSync(file + '.backup-' + digest(before) + '.json', 'invalid', { mode: 0o600 });
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session), 'VELOG_RECOVERY_BACKUP_FAILED');
+  assert.deepEqual(readFileSync(file), before); assert.equal(s.state.writes.length, 1);
+});
+test('image recovery verifies exact body first, deduplicates CDN reads and pins bytes', async t => {
+  const { f, s } = await unresolved(t, '한글😀\n![one](image.png)\n![two][pic]\n\n[pic]: image.png\n'); let fetches = 0;
+  const request = async (url, options) => { fetches++; assert.equal(new URL(url).hostname, 'velog.velcdn.com'); assert.equal(options.redirect, 'error'); assert.equal(options.credentials, 'omit'); assert(options.signal instanceof AbortSignal); return new Response(png); };
+  const r = await inspectVelog(f.article(), 'tester', f.dir, s.session, request); assert.equal(r.canReconcile, true); assert.equal(r.localImages, 1); assert.equal(fetches, 1);
+  s.state.post.body += 'changed'; fetches = 0;
+  assert.equal((await inspectVelog(f.article(), 'tester', f.dir, s.session, request)).canReconcile, false); assert.equal(fetches, 0);
+});
+test('reordered or inconsistent repeated images are rejected before any fetch', async t => {
+  const { f, s } = await unresolved(t, '![first](image.png)\n![second](image.png)\n'); const original = s.state.post.body;
+  for (const body of [original.replace('![first]', '![other]'), original.replace(/https:\/\/velog.velcdn.com\/images\/test\/image.png(?=>)/, 'https://velog.velcdn.com/different.png')]) {
+    s.state.post.body = body;
+    assert.equal((await inspectVelog(f.article(), 'tester', f.dir, s.session, () => assert.fail('must not fetch'))).canReconcile, false);
+  }
+});
+test('symlink backup cannot authorize a local journal replacement', async t => {
+  const { f, s, file } = await unresolved(t), before = readFileSync(file), review = await inspectVelog(f.article(), 'tester', f.dir, s.session);
+  symlinkSync(file, file + '.backup-' + digest(before) + '.json');
+  await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session), 'VELOG_RECOVERY_BACKUP_FAILED');
+  assert.deepEqual(readFileSync(file), before);
+});
+test('an existing exact private backup is verified rather than overwritten', async t => {
+  const { f, s, file } = await unresolved(t), before = readFileSync(file), review = await inspectVelog(f.article(), 'tester', f.dir, s.session);
+  const backup = file + '.backup-' + digest(before) + '.json'; writeFileSync(backup, before, { mode: 0o600 });
+  await reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session);
+  assert.deepEqual(readFileSync(backup), before); assert.equal(f.state().status, 'succeeded');
+});
+for (const operation of ['openSync', 'writeFileSync', 'fsyncSync']) test(`backup ${operation} failure cannot replace unresolved bytes`, async t => {
+  const { f, s, file } = await unresolved(t), before = readFileSync(file), review = await inspectVelog(f.article(), 'tester', f.dir, s.session);
+  const original = fs[operation], mocked = t.mock.method(fs, operation, (...args) => {
+    if (operation === 'openSync' && !String(args[0]).includes('.backup-')) return original(...args);
+    throw Error('SYNTHETIC_FAILURE');
+  }); syncBuiltinESMExports();
+  try { await rejects(() => reconcileVelog(f.article(), 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session), 'VELOG_RECOVERY_BACKUP_FAILED'); }
+  finally { mocked.mock.restore(); syncBuiltinESMExports(); }
+  assert.deepEqual(readFileSync(file), before); assert.equal(f.state().status, 'unknown'); assert.equal(s.state.writes.length, 1);
+});
+test('recovery supports distinct local sources and preserved authored remote URLs', async t => {
+  const { f, s } = await unresolved(t); writeFileSync(path.join(f.dir, 'second.png'), png);
+  writeFileSync(f.file, f.text.replace('PRIVATE_BODY_SENTINEL', '![one][first]\n![two](second.png)\n![remote](https://example.test/preserved.png)\n\n[first]: image.png'));
+  const a = f.article(), stateFile = journalPath(f.dir, 'tester', 'velog-test', false), state = readJournal(stateFile, 'tester', 'velog-test');
+  state.contentHash = a.contentHash; saveJournal(stateFile, state); const refs = velogImages(a);
+  s.state.post.body = replaceVelogImages(a, refs, new Map(refs.map(r => [r.source, 'https://velog.velcdn.com/'+r.source]))); let reads = 0;
+  const r = await inspectVelog(a, 'tester', f.dir, s.session, async url => { assert.equal(new URL(url).hostname, 'velog.velcdn.com'); reads++; return new Response(png); });
+  assert.equal(r.canReconcile, true); assert.equal(r.localImages, 2); assert.equal(reads, 2);
+});
+for (const bad of ['http://velog.velcdn.com/a.png', 'https://evil.test/a.png', 'https://velog.velcdn.com:444/a.png', 'https://u:p@velog.velcdn.com/a.png']) test(`recovery never fetches untrusted image: ${bad}`, async t => {
+  const { f, s } = await unresolved(t, '![one](image.png)'); s.state.post.body = s.state.post.body.replace('https://velog.velcdn.com/images/test/image.png', bad);
+  const r = await inspectVelog(f.article(), 'tester', f.dir, s.session, () => assert.fail('must not fetch')); assert.equal(r.canReconcile, false);
+});
+for (const mode of ['changed', 'oversized', 'redirect', 'timeout']) test(`unverified ${mode} image blocks recovery`, async t => {
+  const { f, s } = await unresolved(t, '![one](image.png)'); let cancelled = false;
+  const request = async (_url, options) => {
+    assert(options.signal instanceof AbortSignal);
+    if (mode === 'timeout') throw new DOMException('SECRET', 'TimeoutError');
+    if (mode === 'redirect') return new Response('', { status: 302 });
+    const bytes = mode === 'oversized' ? Buffer.alloc(png.length + 1) : Buffer.alloc(png.length);
+    return new Response(new ReadableStream({ start(controller) { controller.enqueue(bytes); if (mode !== 'oversized') controller.close(); }, cancel() { cancelled = true; } }));
+  };
+  const r = await inspectVelog(f.article(), 'tester', f.dir, s.session, request); assert.equal(r.canReconcile, false); assert.doesNotMatch(JSON.stringify(r), /SECRET/);
+  if (mode === 'oversized') assert.equal(cancelled, true);
+});
+test('reviewed source target compatibility preserves hash format and avoids a second write', async t => {
+  const { f, s, file } = await unresolved(t); const a = f.article(), state = readJournal(file, 'tester', 'velog-test');
+  assert.equal(a.contentHash, digest({ ...a.meta, body: a.body, imageHashes: [] }));
+  state.contentHash = contentHashForTargets(a, ['velog', 'tistory']); saveJournal(file, state);
+  assert.equal(contentHashForTargets(a, ['velog']), a.contentHash); a.meta.targets = ['velog', 'tistory']; a.contentHash = contentHashForTargets(a);
+  const review = await inspectVelog(a, 'tester', f.dir, s.session); assert.equal(review.canReconcile, true);
+  await reconcileVelog(a, 'tester', f.dir, { confirmed: true, reviewHash: review.reviewHash, acceptTags: true }, s.session);
+  assert.equal(readJournal(file, 'tester', 'velog-test').contentHash, state.contentHash);
+  assert.equal((await pushVelog(f.article(), 'tester', f.dir, true, s.session)).skipped, true); assert.equal(s.state.writes.length, 1);
+});
+test('built recovery CLI gates confirmation, target history and missing identity offline', t => {
+  const f = fixture(t), guard = path.join(f.dir, 'recovery-guard.cjs');
+  writeFileSync(guard, `const deny=()=>{throw Error('FORBIDDEN')};global.fetch=deny;for(const n of ['http','https']){const m=require('node:'+n);m.request=deny;m.get=deny;}require('node:net').Socket.prototype.connect=deny;require('node:child_process').spawnSync=deny;require('node:child_process').spawn=deny;`);
+  for (const [action, options, code] of [
+    ['inspect', [], 'VELOG_NO_REMOTE_ID'],
+    ['inspect', ['--published-to', 'blogger'], 'INVALID_ARGUMENT'],
+    ['reconcile', [], 'VELOG_RECOVERY_CONFIRM_REQUIRED'],
+    ['reconcile', ['--confirm'], 'VELOG_RECOVERY_REVIEW_REQUIRED'],
+  ]) {
+    const r = spawnSync(process.execPath, ['--require', guard, cli, 'velog', action, f.file, '--account', 'tester', '--json', ...options], { cwd: f.dir, encoding: 'utf8', timeout: 10000 });
+    assert.equal(r.status, 1); assert.equal(JSON.parse(r.stdout).error.code, code); assert.doesNotMatch(r.stdout+r.stderr, /FORBIDDEN/);
+  }
+  assert.equal(f.state().status, 'not_submitted'); assert.equal(readFileSync(f.file, 'utf8'), f.text);
+});
 
 test('folded tag collisions fail offline before session or journal creation', async t => {
   const f = fixture(t, 'public'); writeFileSync(f.file, f.text.replace('[개발, CLI]', '[CLI, cli]'));

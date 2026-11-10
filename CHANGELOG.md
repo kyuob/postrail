@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Velog recovery
+
+- Add read-only `velog inspect` and explicitly reviewed local `velog reconcile`, limited to owned saved pending/unknown IDs. Compare source, exact reconstructed Markdown, tags, both visibility flags and local CDN image bytes.
+- Require a fresh source/journal/remote review hash, explicit tag-difference acceptance, journal lock and verified private byte-exact backup before local reconciliation. No remote publication writes, retries or abandoned-lock cleanup.
+- Retain the original publication hash and a validated target-independent approved-source hash so a target-selection change does not rewrite an adopted post; exact remote conflicts still block subsequent skips.
+- Recovery is not available in the v0.1.0 tarball, is not implemented for other adapters, and was tested with synthetic sessions only. Existing user journals and posts were not changed.
+- Scoped regressions now total225, including review staleness, exact draft/private flags, CDN restrictions, journal backups and post-recovery conflict checks.
+
 ## Unreleased — v0.1.1 stability work
 
 - Reject ASCII-case-colliding tags in Velog/Tistory offline checks and direct pushes before authentication, uploads or journal creation.

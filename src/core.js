@@ -153,8 +153,14 @@ export function loadArticle(file, config, overrideTargets) {
   }
   inspect(tokens);
   const metaResult = { id: meta.id, title: meta.title.trim(), tags, visibility: chosenVisibility, targets: chosenTargets };
-  const imageHashes = [...images.values()].filter(i => i.kind === "local").map(i => [i.source, hash(i.data)]);
-  return { meta: metaResult, body, md, tokens, images, warnings: [...warnings], contentHash: hash(JSON.stringify({ ...metaResult, body, imageHashes })) };
+  const article = { meta: metaResult, body, md, tokens, images, warnings: [...warnings] };
+  article.contentHash = contentHashForTargets(article, chosenTargets);
+  return article;
+}
+
+export function contentHashForTargets(article, selected = article.meta.targets) {
+  const imageHashes = [...article.images.values()].filter(i => i.kind === 'local').map(i => [i.source, hash(i.data)]);
+  return hash(JSON.stringify({ ...article.meta, targets: targets(selected), body: article.body, imageHashes }));
 }
 
 export function summary(article) {

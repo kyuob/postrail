@@ -40,7 +40,8 @@ export function readJournal(file, account, articleId) {
   if (!value || value.version !== 1 || value.account !== account || value.articleId !== articleId || !["pending", "succeeded", "unknown"].includes(value.status)
     || typeof value.ownerId !== "string" || !value.ownerId || typeof value.contentHash !== "string" || !/^[a-f0-9]{64}$/.test(value.contentHash)
     || (value.postId !== undefined && (typeof value.postId !== "string" || !/^[A-Za-z0-9_-]{1,200}$/.test(value.postId)))
-    || (value.status === "succeeded" && (!value.postId || !/^[a-f0-9]{64}$/.test(value.remoteHash)))) fail("VELOG_STORAGE_FAILED", "The local journal is invalid.");
+    || (value.status === "succeeded" && (!value.postId || !/^[a-f0-9]{64}$/.test(value.remoteHash)))
+    || (value.recoveredContentHash !== undefined && (value.status !== 'succeeded' || typeof value.recoveredContentHash !== 'string' || !/^[a-f0-9]{64}$/.test(value.recoveredContentHash)))) fail("VELOG_STORAGE_FAILED", "The local journal is invalid.");
   return value;
 }
 export function saveJournal(file, value) {
