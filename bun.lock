@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "postrail",
+      "name": "@kyuob/postrail",
       "dependencies": {
         "@keyflow-blog/cli": "2026.10.20",
         "image-size": "2.1.0",

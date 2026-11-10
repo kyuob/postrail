@@ -1,6 +1,6 @@
 # Google Blogger 어댑터 — 실험적
 
-대상 ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID 조회·PATCH 수정·발행/초안 전환을 구현했다. 2026-11-10 사용자 지정 계정에서 실제 OAuth·관리자 블로그 선택·초안 1개 생성·같은 ID 수정·인증 조회·변경 없는 재전송 건너뛰기를 확인했다. [실검증 범위](bundled-validation-results.md)를 따른다. Cloud 설정은 바꾸지 않았으며 화면/이미지 표시·실제 만료 갱신·공개 전환·충돌 API 동작은 미검증이다.
+대상ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID조회·PATCH수정·발행/초안 전환을 구현했다. 2026-11-10 지정 계정에서 실제OAuth·관리자 선택·초안 생성·같은ID 수정·인증조회·변경 없는 전송 건너뛰기를 확인했다. 이어 영문 원고의 실제 공개 전환·같은ID 수정과 공개CDN이미지12개·추천 이미지2개의 클릭을 macOS Chrome에서 확인했다. [초기 실검증](bundled-validation-results.md)과 [공개 검수](publication-fable52.md)를 구분한다. Cloud설정은 바꾸지 않았으며 실제 만료 갱신·공개→초안 되돌리기·충돌API의 실계정 동작은 미검증이다.
 
 ```sh
 node dist/cli.js blogger check examples/blogger.md --json

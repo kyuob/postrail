@@ -1,6 +1,6 @@
 # Common publish command
 
-`publish` sends one Markdown article through the existing platform adapters, sequentially. It does not log in automatically. Log in with each platform's command first, then review the article, visibility and exact destinations. Mocks cover partial results and guards; real common Velog/Tistory private and Velog/Blogger draft flows passed creation, same-ID update, readback and unchanged skip in [stage7](stage7-status.md). No new KeyFlow live action was performed. Public publishing and visual rendering remain unverified.
+`publish` sends one Markdown article through the existing platform adapters, sequentially. It does not log in automatically. Log in with each platform's command first, then review the article, visibility and exact destinations. Mocks cover partial results and guards; real common Velog/Tistory private and Velog/Blogger draft flows passed creation, same-ID update, readback and unchanged skip in [stage7](stage7-status.md). A subsequent [authorized article](publication-fable52.md) passed public saved-ID updates and desktop image-link checks on all three services. No new KeyFlow live action was performed. Mobile rendering and allOS authentication are not implied.
 
 ## Destinations
 

@@ -6,13 +6,13 @@ Write once. Publish across your blogs.
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
 
-> **Status: offline CLI, per-platform adapters and experimental common publishing.** KeyFlow acceptance is closed. Per-adapter checks and common Velog/Tistory private + Velog/Blogger draft flows passed create, same-ID update, readback and unchanged-skip validation. Public publishing, visual rendering and remote OS-matrix results remain unverified. Tistory draft slots and Blogger private/local images are unsupported. No registry package has been released.
+> **v0.1.0: an experimental CLI with verified publishing flows.** Korean public posts on Velog/Tistory and an English public Blogger post passed saved-ID readback, desktop rendering and clickable-image checks. Node22/24 offline CI passed on macOS/Linux/Windows. KeyFlow acceptance remains closed. Tistory draft slots and Blogger private/local images are unsupported. See the [support matrix](docs/support.md) for exact limits.
 
 ## Development
 
 Requires [Bun](https://bun.sh/) 1.3+ for development and Node.js 22+ for the built CLI.
 
-No registry package is released yet. Follow the [source/local-package installation guide](docs/installation.md); do not install an unrelated registry package by name. Velog/Tistory manual authentication currently supports macOS only.
+Install the verified GitHub release tarball or build from source using the [installation guide](docs/installation.md). No npm registry package has been released; the unscoped npm name `postrail` belongs to another project. Velog/Tistory manual authentication currently supports macOS only.
 
 ```sh
 bun install --frozen-lockfile
@@ -77,7 +77,11 @@ All selected targets pass offline capability checks before sequential sends. Res
 - [x] Scoped real-account draft/private validation for Velog, Tistory and Blogger
 - [x] Offline preview and publishing plan with explicit adapter status
 - [x] Track remote IDs, same-post updates, partial results and uncertain writes
-- [ ] Document installation and publish the first usable release
+- [x] Installation/login/FAQ guides and clean-package installation checks
+- [x] Public publishing and desktop image-link checks on Velog/Tistory/Blogger
+- [x] Node22/24 offline CI on macOS/Linux/Windows
+- [x] First GitHub release package prepared as v0.1.0
+- [ ] npm registry distribution under an owned package name
 
 Platform support is a goal, not a claim that every platform currently exposes a suitable public API. Document limitations before implementing a connector.
 

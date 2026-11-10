@@ -2,7 +2,7 @@
 
 Markdown 하나를 Velog·Tistory·KeyFlow·Google Blogger로 보내는 오픈소스 CLI입니다.
 
-**현재는 첫 공개 패키지 릴리스 전입니다.** 플랫폼별 초안·비공개 생성·같은 ID 수정·조회 검증을 마쳤으며, 기능별 제약을 유지합니다. 공개 발행·이미지와 서식의 육안 확인·모든 OS 인증을 검증했다는 뜻은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](docs/stage7-status.md)을 확인해 주세요.
+**v0.1.0 실험적 CLI입니다.** 벨로그·티스토리 한국어 글과 블로거 영문 글의 실제 공개 발행, 같은ID 수정·재조회, 데스크톱 이미지 표시·클릭을 확인했습니다. Node22/24의 macOS·Linux·Windows 오프라인CI도 통과했습니다. 모든OS의 실제 로그인이나 미지원 기능까지 검증한 것은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](docs/stage7-status.md)을 확인해 주세요.
 
 [English README](README.md) · [설치](docs/installation.md) · [로그인](docs/login.md) · [FAQ](docs/faq.md)
 
@@ -20,7 +20,7 @@ node dist/cli.js validate examples/blogger.md --json
 node dist/cli.js preview examples/blogger.md --output first-preview.html
 ```
 
-위 명령은 글을 올리지 않습니다. 아직 레지스트리 이름으로 설치하는 명령은 제공하지 않습니다. 로컬 tarball 설치·업데이트·제거는 [설치 가이드](docs/installation.md)를 따릅니다.
+위 명령은 글을 올리지 않습니다. [v0.1.0 GitHub릴리스](https://github.com/kyuob/postrail/releases/tag/v0.1.0)의 tarball로도 설치할 수 있습니다. npm용이름은 `@kyuob/postrail`로 준비했으나 아직 공개하지 않았습니다. 다른프로젝트의 `postrail`패키지를 이름만으로 설치하지 마세요. 설치·업데이트·제거는 [설치 가이드](docs/installation.md)를 따릅니다.
 
 ## 로그인
 

@@ -51,9 +51,9 @@ Preview prints HTML unless --output is given.
 Existing files are never overwritten. --json returns structured results/errors.
 publish --dry-run checks all selected targets offline; --confirm sends sequentially.
 Partial results are preserved. Uncertain writes are never automatically retried.
-Velog/Tistory/Blogger remain experimental; scoped draft/private account tests passed.
+Velog/Tistory/Blogger remain experimental; scoped public and draft/private account tests passed.
 Tistory draft slots and Blogger private/local images are unsupported.
-Scoped common private/draft flows passed; public publishing and visual rendering remain unverified.`;
+Scoped common flows and desktop image-link rendering passed; see the support matrix for limits.`;
 
 function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };

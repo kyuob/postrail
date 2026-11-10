@@ -1,6 +1,6 @@
 # Postrail v0.1.0 개발 계획
 
-목표: Markdown 하나를 네 플랫폼으로 보내고 결과를 추적하는 CLI. 오프라인 CLI, 개별 어댑터와 [공통 publish](publish.md)를 제공한다. KeyFlow 추가 검증은 종료했다. Velog/Tistory/Blogger의 초안·비공개 개별 저장과 공통 전송의 호환 가능한 두 조합을 실계정으로 확인했다. [7단계](stage7-status.md)의 문서·로컬 설치 검수·CI 구성은 마쳤으며, 원격 OS별 실행 결과·화면 표시·공개 발행·첫 릴리스는 남아 있다.
+목표: Markdown 하나를 네 플랫폼으로 보내고 결과를 추적하는CLI. 오프라인CLI, 개별 어댑터와 [공통 publish](publish.md)를 제공한다. KeyFlow추가 검증은 종료했다. Velog/Tistory/Blogger의 초안·비공개와 지정 원고의 공개 발행·같은ID 수정·데스크톱 이미지 클릭을 확인했다. [7단계](stage7-status.md)의 문서·로컬 설치·원격CI9개job을 검수했으며, 첫 배포 범위는 [v0.1.0 GitHub릴리스](release-0.1.0.md)다. npm은 `@kyuob/postrail`로 준비하고 별도 공개 전까지 `private:true`를 유지한다.
 
 ## 진행 상태
 
@@ -8,17 +8,17 @@
 |---|---|---|
 | 0. 저장소와 실행 기반 | 완료 | MIT, Bun 빌드, Node 실행, CLI 검사, GitHub CI |
 | 1A. 오픈소스 조사 | 완료 | 플랫폼별 2개 소스·고정 커밋·라이선스·제약 기록: [분석](references.md) |
-| 1B. 플랫폼 실동작 검증 | 초안·비공개 API 검증 완료, 화면·공개 범위 미검증 | 생성·같은 ID 수정·조회·건너뛰기·원본 보존 확인. Velog 테스트 초안은 사용자가 이후 삭제 |
+| 1B. 플랫폼 실동작 검증 | 초안·비공개와 지정 공개 원고 검수 완료 | 생성·같은ID 수정·조회·skip·원본 보존,macOS공개 화면·추천 이미지 클릭 확인.모바일·모든OS인증은 제외 |
 | 2. 공통 원고·오프라인 CLI | 구현 완료 | init/validate/preview/plan을 네트워크 없이 실행. Node CLI 검사·파일 보호·HTML 렌더링·오류 계약 검증 |
 | 3. KeyFlow 어댑터 | 사용자 확정·추가 검증 종료 | 기존 스킬로 사용 중인 확정 연동. [기존 실검증 기록](live-validation.md)은 보존하되 추가 검증을 완료 조건으로 요구하지 않음 |
-| 4. Velog 어댑터 | 실험적 구현·초안 실검증 완료 | 일반 Chrome 수동 로그인·계정 확인·동일 ID 수정 검증. 화면·공개 범위 미검증 |
-| 5. Tistory 어댑터 | 실험적 구현·비공개 실검증 완료 | 일반 Chrome 세션 복원·Config.post/entry·동일 ID 수정·이미지 메타데이터 저장 차이 확인. draft 슬롯 미지원 |
-| 5B. Google Blogger 어댑터 | 실험적 구현·초안 실검증 완료 | Desktop OAuth·ADMIN 대상·동일 ID PATCH 검증. private/로컬 이미지/Windows 인증 미지원: [사용법](blogger.md) |
+| 4. Velog 어댑터 | 실험적 구현·초안/공개 지정 원고 검수 완료 | 일반Chrome로그인·같은ID 수정·이미지 표시와클릭 확인.내부인터페이스 변경 위험 유지 |
+| 5. Tistory 어댑터 | 실험적 구현·비공개/공개 지정 원고 검수 완료 | 세션복원·Config.post/entry·같은ID 수정·첨부이미지·문단간격 확인.draft슬롯 미지원 |
+| 5B. Google Blogger 어댑터 | 실험적 구현·초안/공개 지정 원고 검수 완료 | DesktopOAuth·ADMIN·같은ID PATCH·영문공개·공개CDN이미지 표시 확인.private/로컬이미지/Windows인증 미지원:[사용법](blogger.md) |
 | 6. 다중 전송·복구 | 모의 검사·호환 조합의 live 검증 완료 | 전체 사전 검사, 부분 성공 보존, unknown/ID 보호, 동시 실행 차단. private V/T·draft V/B의 실제 저장·수정·skip 확인 |
-| 7. 배포 검수 | 문서·로컬 검수·CI 구성 완료 | macOS ARM64 Node22 패키지 설치와 마지막 다중 E2E 통과. 원격 CI·육안 표시 범위는 미확인으로 명시 |
-| 8. 첫 릴리스 | 대기 | 명시적 배포 승인 후 태그·패키지·릴리스 노트 공개 |
+| 7. 배포 검수 | 문서·로컬설치·원격CI·지정공개화면 검수 완료 | macOS ARM64패키지 설치,Node22/24·세OS오프라인6조합과Linux패키지2조합 통과 |
+| 8. 첫 릴리스 | v0.1.0 GitHub배포 | [릴리스노트](release-0.1.0.md),설치tarball·체크섬. npm은이름준비만수행,별도인증·공개필요 |
 
-KeyFlow는 사용자 확정으로 추가 검증 범위에서 제외한다. Velog/Tistory/Blogger의 실계정 검증은 사용자 승인 범위로 [묶어서 진행](bundled-validation.md)했다. 초안·비공개 저장 검증과 미확인인 화면·공개 발행을 구분하며 네 플랫폼의 모든 기능이 검증됐다고 표시하지 않는다.
+KeyFlow는 사용자 확정으로 추가 검증에서 제외한다. Velog/Tistory/Blogger의 실계정 검증은 승인 범위로 [묶어서 진행](bundled-validation.md)했고,[후속공개원고](publication-fable52.md)로화면과클릭을확인했다. 지정원고·환경의증거를 네플랫폼 모든기능의검증으로확대하지않는다.
 
 ## 2. 공통 원고와 오프라인 명령
 

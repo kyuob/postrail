@@ -17,17 +17,17 @@ function run(command, args, cwd = root, env = process.env) {
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json')));
 assert.equal(pkg.private, true); // Packing and local install do not authorize publication.
 run('bun', ['pm', 'pack', '--destination', output, '--quiet']);
-const archive = path.join(output, `${pkg.name}-${pkg.version}.tgz`); assert(existsSync(archive));
+const archive = path.join(output, `${pkg.name.replace(/^@/, '').replaceAll('/', '-')}-${pkg.version}.tgz`); assert(existsSync(archive));
 const entries = run('tar', ['-tzf', archive]).trim().split(/\r?\n/).filter(Boolean);
 const allowed = name => /^package\/(?:package\.json|LICENSE|README(?:\.ko)?\.md|CHANGELOG\.md|CONTRIBUTING\.md|SECURITY\.md|dist\/cli\.js|docs\/[A-Za-z0-9._-]+\.md|examples\/[A-Za-z0-9._-]+\.(?:md|json))$/.test(name);
 for (const entry of entries) assert(allowed(entry), `Unexpected package entry: ${entry}`);
 for (const required of ['package/package.json', 'package/dist/cli.js', 'package/LICENSE', 'package/README.ko.md', 'package/docs/installation.md', 'package/docs/login.md', 'package/docs/faq.md', 'package/SECURITY.md', 'package/CHANGELOG.md']) assert(entries.includes(required), `Missing package file: ${required}`);
 assert(!run('tar', ['-tvzf', archive]).split(/\r?\n/).some(line => /^[lh]/.test(line)), 'Package must not include symlink/hardlink entries.');
 const consumer = path.join(work, 'consumer'), home = path.join(work, 'home'); mkdirSync(consumer); mkdirSync(home, { mode: 0o700 });
-writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({ name: 'postrail-install-smoke', private: true, type: 'module', dependencies: { postrail: pathToFileURL(archive).href } }, null, 2));
+writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({ name: 'postrail-install-smoke', private: true, type: 'module', dependencies: { [pkg.name]: pathToFileURL(archive).href } }, null, 2));
 const env = { ...process.env, HOME: home, USERPROFILE: home };
 run('bun', ['install', '--ignore-scripts'], consumer, env);
-const installed = path.join(consumer, 'node_modules/postrail');
+const installed = path.join(consumer, 'node_modules', pkg.name);
 assert.equal(JSON.parse(readFileSync(path.join(installed, 'package.json'))).version, pkg.version);
 assert(existsSync(path.join(consumer, 'node_modules/playwright-core/package.json')));
 assert(existsSync(path.join(consumer, 'node_modules/@keyflow-blog/cli/package.json')));

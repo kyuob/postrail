@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 — 2026-11-10
 
-No registry package, release tag or stable release has been published. The working package version remains `0.0.0` and `private: true` until the separate first-release step is approved.
+First experimental GitHub release, distributed as `kyuob-postrail-0.1.0.tgz` with SHA256 checksums. The package name is `@kyuob/postrail` and the command is `postrail`. npm publication is not part of this release; `private: true` prevents accidental registry publication. The unscoped npm name belongs to a different project.
 
 ### Added
 
@@ -16,7 +16,9 @@ No registry package, release tag or stable release has been published. The worki
 - Manual authentication uses ordinary Chrome with isolated Postrail profiles; Tistory restores normal session cookies across restart.
 - Blogger administrator-list parsing supports the actual user-info envelope and rejects invalid memberships.
 - Tistory readback supports current and legacy literal configuration shapes, preserves editor options and normalizes numeric image-dimension serialization.
+- Intended tag verification accepts server-canonical ASCII casing while keeping exact remote conflict fingerprints and rejecting changed tag identities or duplicates.
+- Tistory generated HTML preserves paragraph spacing and separates image captions, including when the skin resets paragraph margins. Earlier renderer journals update the same ID once after conflict checks.
 
 ### Verification and limitations
 
-Scoped per-adapter draft/private create/read/same-ID update/unchanged-skip checks passed. User cleanup of the Velog test was recorded separately. The shared multi-target check runs last in stage7 and is reported in [stage7 status](docs/stage7-status.md). Do not infer public-publishing, token-expiry, visual-rendering or cross-platform authentication coverage from those checks. KeyFlow acceptance remains closed with its existing limits.
+Scoped draft/private flows and subsequent public Velog/Tistory/Blogger saved-ID updates passed. The approved public article retained16 sections and12 images per language; desktop image rendering and six promotional-image clicks were observed.167 publishing regressions and all9jobs in the Node22/24/macOS/Linux/Windows CI passed before release preparation. See [stage7](docs/stage7-status.md), [public acceptance](docs/publication-fable52.md) and [release notes](docs/release-0.1.0.md). Mobile, allOS authentication, expired-token live recovery and live public-to-draft reversal remain outside that proof. KeyFlow acceptance remains closed.
