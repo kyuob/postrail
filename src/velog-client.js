@@ -7,12 +7,17 @@ import { manualChromeLogin, chromeExecutable } from "./manual-chrome-login.js";
 
 export const VELOG_GRAPHQL = "https://v3.velog.io/graphql";
 export const VELOG_UPLOAD = "https://v3.velog.io/api/files/v3/upload";
-export const POST_FIELDS = "id title body tags is_temp is_private url_slug thumbnail short_description series { id } user { id username }";
+export const POST_FIELDS =
+  "id title body tags is_temp is_private url_slug thumbnail short_description series { id } user { id username }";
 export const READ_POST = `query PostrailRead($input: ReadPostInput!) { post(input: $input) { ${POST_FIELDS} } }`;
 export const WRITE_POST = `mutation PostrailWrite($input: WritePostInput!) { writePost(input: $input) { ${POST_FIELDS} } }`;
 export const EDIT_POST = `mutation PostrailEdit($input: EditPostInput!) { editPost(input: $input) { ${POST_FIELDS} } }`;
 export function velogAccount(value) {
-  if (typeof value !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(value)) fail("VELOG_ACCOUNT_REQUIRED", "Pass --account with your exact Velog username (letters, digits, underscores or hyphens).");
+  if (typeof value !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(value))
+    fail(
+      "VELOG_ACCOUNT_REQUIRED",
+      "Pass --account with your exact Velog username (letters, digits, underscores or hyphens).",
+    );
   return value;
 }
 function profilePath(account, create) {
@@ -21,94 +26,188 @@ function profilePath(account, create) {
     if (create) directory = privateDirectory(directory, name);
     else {
       const next = path.join(directory, name);
-      if (!existsSync(next)) fail("VELOG_LOGIN_REQUIRED", "Run postrail velog login --account USERNAME first.");
+      if (!existsSync(next))
+        fail("VELOG_LOGIN_REQUIRED", "Run postrail velog login --account USERNAME first.");
       directory = privateDirectory(directory, name);
     }
   }
   return directory;
 }
 export class VelogClient {
-  constructor(request) { this.request = request; }
+  constructor(request) {
+    this.request = request;
+  }
   async send(endpoint, options) {
     let response;
-    try { response = await this.request.post(endpoint, { ...options, headers: { Origin: "https://velog.io", Referer: "https://velog.io/" }, maxRedirects: 0, maxRetries: 0, timeout: 30_000 }); }
-    catch { fail("VELOG_NETWORK_FAILED", "Velog did not return a complete response. Do not retry an unresolved write."); }
     try {
-      if ([401, 403].includes(response.status())) fail("VELOG_LOGIN_REQUIRED", "Velog rejected this session; log in again before retrying a resolved operation.");
-      if (response.status() < 200 || response.status() >= 300) fail("VELOG_HTTP_FAILED", "Velog returned an unsuccessful response. Server output was withheld.");
+      response = await this.request.post(endpoint, {
+        ...options,
+        headers: { Origin: "https://velog.io", Referer: "https://velog.io/" },
+        maxRedirects: 0,
+        maxRetries: 0,
+        timeout: 30_000,
+      });
+    } catch {
+      fail(
+        "VELOG_NETWORK_FAILED",
+        "Velog did not return a complete response. Do not retry an unresolved write.",
+      );
+    }
+    try {
+      if ([401, 403].includes(response.status()))
+        fail(
+          "VELOG_LOGIN_REQUIRED",
+          "Velog rejected this session; log in again before retrying a resolved operation.",
+        );
+      if (response.status() < 200 || response.status() >= 300)
+        fail(
+          "VELOG_HTTP_FAILED",
+          "Velog returned an unsuccessful response. Server output was withheld.",
+        );
       const buffer = await response.body();
-      if (buffer.length > 8 * 1024 * 1024) fail("VELOG_RESPONSE_INVALID", "Velog returned an oversized response.");
+      if (buffer.length > 8 * 1024 * 1024)
+        fail("VELOG_RESPONSE_INVALID", "Velog returned an oversized response.");
       let value;
-      try { value = JSON.parse(buffer.toString("utf8")); } catch { fail("VELOG_RESPONSE_INVALID", "Velog returned an unrecognized response."); }
-      if (!value || typeof value !== "object" || Array.isArray(value)) fail("VELOG_RESPONSE_INVALID", "Velog returned an unrecognized response.");
+      try {
+        value = JSON.parse(buffer.toString("utf8"));
+      } catch {
+        fail("VELOG_RESPONSE_INVALID", "Velog returned an unrecognized response.");
+      }
+      if (!value || typeof value !== "object" || Array.isArray(value))
+        fail("VELOG_RESPONSE_INVALID", "Velog returned an unrecognized response.");
       return value;
-    } finally { await response.dispose().catch(() => {}); }
+    } finally {
+      await response.dispose().catch(() => {});
+    }
   }
   async graphql(query, variables = {}, onPartialData) {
     const operationName = /(?:query|mutation)\s+(\w+)/.exec(query)[1];
     const value = await this.send(VELOG_GRAPHQL, { data: { operationName, query, variables } });
-    const hasData = value.data && typeof value.data === 'object' && !Array.isArray(value.data);
+    const hasData = value.data && typeof value.data === "object" && !Array.isArray(value.data);
     // A mutation may have committed even when another requested field failed.
     // Only the adapter's ownership validator may retain identity; this stays an error.
     if (value.errors?.length && hasData && onPartialData) onPartialData(value.data);
-    if (value.errors?.length || !hasData) fail("VELOG_GRAPHQL_FAILED", "Velog did not confirm the operation. Server errors were withheld; no alternate schema was tried.");
+    if (value.errors?.length || !hasData)
+      fail(
+        "VELOG_GRAPHQL_FAILED",
+        "Velog did not confirm the operation. Server errors were withheld; no alternate schema was tried.",
+      );
     return value.data;
   }
   async currentUser() {
-    const { currentUser } = await this.graphql("query PostrailAccount { currentUser { id username } }");
+    const { currentUser } = await this.graphql(
+      "query PostrailAccount { currentUser { id username } }",
+    );
     return currentUser;
   }
-  async read(id) { return (await this.graphql(READ_POST, { input: { id } })).post; }
+  async read(id) {
+    return (await this.graphql(READ_POST, { input: { id } })).post;
+  }
   async write(input, update, retainIdentity) {
-    const field = update ? 'editPost' : 'writePost';
-    return (await this.graphql(update ? EDIT_POST : WRITE_POST, { input }, data => retainIdentity?.(data[field])))[field];
+    const field = update ? "editPost" : "writePost";
+    return (
+      await this.graphql(update ? EDIT_POST : WRITE_POST, { input }, (data) =>
+        retainIdentity?.(data[field]),
+      )
+    )[field];
   }
   async upload(image, name) {
-    const result = await this.send(VELOG_UPLOAD, { multipart: { image: { name, mimeType: image.mime, buffer: image.data }, type: "post" } });
+    const result = await this.send(VELOG_UPLOAD, {
+      multipart: { image: { name, mimeType: image.mime, buffer: image.data }, type: "post" },
+    });
     let url;
-    try { url = new URL(result.path); } catch { fail("VELOG_RESPONSE_INVALID", "Velog did not return an image URL."); }
-    if (url.protocol !== "https:" || !(url.hostname === "velcdn.com" || url.hostname.endsWith(".velcdn.com")) || url.username || url.password) fail("VELOG_RESPONSE_INVALID", "Velog returned an unexpected image destination.");
+    try {
+      url = new URL(result.path);
+    } catch {
+      fail("VELOG_RESPONSE_INVALID", "Velog did not return an image URL.");
+    }
+    if (
+      url.protocol !== "https:" ||
+      !(url.hostname === "velcdn.com" || url.hostname.endsWith(".velcdn.com")) ||
+      url.username ||
+      url.password
+    )
+      fail("VELOG_RESPONSE_INVALID", "Velog returned an unexpected image destination.");
     return url.href;
   }
 }
 export function authDiagnostic(rawUrl, status) {
-  let url; try { url = new URL(rawUrl); } catch { return undefined; }
-  if (url.protocol !== 'https:' || url.username || url.password) return undefined;
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return undefined;
+  }
+  if (url.protocol !== "https:" || url.username || url.password) return undefined;
   let route;
-  if (url.origin === 'https://velog.io' && url.pathname === '/email-login') route = 'email-link';
-  if (url.origin === 'https://v2.velog.io' && /^\/api\/v2\/auth\/code\/[^/]+$/.test(url.pathname)) route = 'email-exchange';
+  if (url.origin === "https://velog.io" && url.pathname === "/email-login") route = "email-link";
+  if (url.origin === "https://v2.velog.io" && /^\/api\/v2\/auth\/code\/[^/]+$/.test(url.pathname))
+    route = "email-exchange";
   if (!route) return undefined;
-  return { route, status: Number.isInteger(status) && status >= 100 && status <= 599 ? status : 'network-failed' };
+  return {
+    route,
+    status: Number.isInteger(status) && status >= 100 && status <= 599 ? status : "network-failed",
+  };
 }
-export async function withVelogSession(account, action, { login = false, diagnostics = false, chromePath } = {}) {
+export async function withVelogSession(
+  account,
+  action,
+  { login = false, diagnostics = false, chromePath } = {},
+) {
   velogAccount(account);
   const executablePath = chromeExecutable(chromePath);
   const directory = profilePath(account, login);
   if (login) {
-    console.error('일반 Chrome의 Postrail 전용 프로필에서 로그인한 뒤, 해당 Chrome 앱을 ⌘Q로 종료해 주세요. 종료 후 저장된 계정을 확인합니다.');
+    console.error(
+      "일반 Chrome의 Postrail 전용 프로필에서 로그인한 뒤, 해당 Chrome 앱을 ⌘Q로 종료해 주세요. 종료 후 저장된 계정을 확인합니다.",
+    );
     await manualChromeLogin(directory, { chromePath });
-    if (diagnostics) console.error('Velog auth diagnostic: manual-browser-exited');
+    if (diagnostics) console.error("Velog auth diagnostic: manual-browser-exited");
   }
   let context;
   try {
     // Keep Playwright external to the Bun bundle; it locates its runtime assets itself.
     const { chromium } = await import("playwright-core");
-    context = await chromium.launchPersistentContext(directory, { ...(executablePath ? { executablePath } : { channel: "chrome" }), chromiumSandbox: true, headless: true, timeout: 30_000, acceptDownloads: false,
+    context = await chromium.launchPersistentContext(directory, {
+      ...(executablePath ? { executablePath } : { channel: "chrome" }),
+      chromiumSandbox: true,
+      headless: true,
+      timeout: 30_000,
+      acceptDownloads: false,
       // Use Chrome's normal OS-backed storage for the manually authenticated
       // dedicated profile; never read or export its credential database.
-      ignoreDefaultArgs: ['--use-mock-keychain', '--password-store=basic'] });
-  } catch { fail("VELOG_BROWSER_FAILED", "Cannot open the dedicated Postrail Chrome profile. Install Google Chrome and close another Postrail session using this account."); }
+      ignoreDefaultArgs: ["--use-mock-keychain", "--password-store=basic"],
+    });
+  } catch {
+    fail(
+      "VELOG_BROWSER_FAILED",
+      "Cannot open the dedicated Postrail Chrome profile. Install Google Chrome and close another Postrail session using this account.",
+    );
+  }
   try {
     const client = new VelogClient(context.request);
     const user = await client.currentUser();
     if (!user) fail("VELOG_LOGIN_REQUIRED", "Sign in using postrail velog login first.");
-    if (user.username !== account || typeof user.id !== "string" || !user.id) fail("VELOG_ACCOUNT_MISMATCH", "The saved profile does not match the requested Velog account.");
+    if (user.username !== account || typeof user.id !== "string" || !user.id)
+      fail(
+        "VELOG_ACCOUNT_MISMATCH",
+        "The saved profile does not match the requested Velog account.",
+      );
     return await action(client, user);
   } catch (error) {
     if (error.code?.startsWith("VELOG_")) throw error;
-    fail("VELOG_SESSION_FAILED", "The Velog session ended unexpectedly. Inspect local and remote state before retrying.");
+    fail(
+      "VELOG_SESSION_FAILED",
+      "The Velog session ended unexpectedly. Inspect local and remote state before retrying.",
+    );
   } finally {
-    try { await context.close(); }
-    catch { fail("VELOG_CLEANUP_FAILED", "Chrome profile cleanup failed. Inspect the operation result before retrying."); }
+    try {
+      await context.close();
+    } catch {
+      fail(
+        "VELOG_CLEANUP_FAILED",
+        "Chrome profile cleanup failed. Inspect the operation result before retrying.",
+      );
+    }
   }
 }

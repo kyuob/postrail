@@ -32,8 +32,9 @@ for (const args of [["--version"], ["-v"]]) {
   assert.equal(result.stderr, "");
 }
 
-const unconfirmed = run(['publish', 'article.md']);
-assert.equal(unconfirmed.status, 1); assert.match(unconfirmed.stderr, /PUBLISH_CONFIRM_REQUIRED/);
+const unconfirmed = run(["publish", "article.md"]);
+assert.equal(unconfirmed.status, 1);
+assert.match(unconfirmed.stderr, /PUBLISH_CONFIRM_REQUIRED/);
 for (const args of [["--unknown"], ["--help", "publish"]]) {
   const result = run(args);
   assert.equal(result.status, 1);
