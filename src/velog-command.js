@@ -1,3 +1,5 @@
+export { printVelog } from "./velog-output.js";
+import { parseArguments } from "./arguments.js";
 import path from "node:path";
 import { fail, loadConfig, loadArticle, targets } from "./core.js";
 import { velogAccount } from "./velog-client.js";
@@ -9,16 +11,11 @@ export async function velogCommand(args) {
   if (!["check", "status", "login", "push", "get", 'inspect', 'reconcile'].includes(action)) fail("INVALID_ARGUMENT", "Use velog check, status, login, push, get, inspect or reconcile.");
   const recovery = ['inspect', 'reconcile'].includes(action);
   const allowed = action === "login" ? ["--account", "--diagnostics", "--chrome-path"] : ["--json", "--config", ...(action !== "check" ? ["--account"] : []), ...(action === "push" ? ["--confirm"] : []), ...(recovery ? ['--published-to'] : []), ...(action === 'reconcile' ? ['--confirm', '--review', '--accept-tags'] : [])];
-  const options = {}; let file;
-  for (let i = 0; i < rest.length; i++) {
-    const argument = rest[i];
-    if (argument.startsWith("-")) {
-      if (!allowed.includes(argument) || Object.hasOwn(options, argument)) fail("INVALID_ARGUMENT", "Unknown or repeated Velog option.");
-      if (["--json", "--confirm", "--diagnostics", '--accept-tags'].includes(argument)) options[argument] = true;
-      else { const value = rest[++i]; if (!value || value.startsWith("-")) fail("INVALID_ARGUMENT", "Option requires a value."); options[argument] = value; }
-    } else if (file || action === "login") fail("INVALID_ARGUMENT", "Unexpected Velog argument.");
-    else file = argument;
-  }
+  const { options, file } = parseArguments(rest, {
+    allowed, positional: action !== "login",
+    optionError: "Unknown or repeated Velog option.",
+    argumentError: "Unexpected Velog argument.",
+  });
   if (action !== "check") velogAccount(options["--account"]);
   if (action === "login") {
     console.error(`Sign into Velog as @${options["--account"]} in the dedicated Postrail Chrome window. No password or token is needed in this terminal.`);

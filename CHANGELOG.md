@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Share strict CLI option parsing while retaining each command's allowed options and validation order.
+- Move platform text output to command-owned printers and keep the CLI entry point as a router.
+- Register public adapter error identifiers explicitly; suppress unknown prefixed identifiers and check core error/exit documentation.
+- Pin Prettier as a development dependency and check source formatting in CI. Runtime dependencies and publishing safeguards are unchanged.
+
 ## 0.1.4 — 2026-11-10
 
 - Limit package documentation to an explicit user-guide allowlist. Keep internal review, stage and live-validation evidence in the repository; validate that shipped Markdown links resolve inside the archive or point to the repository.

@@ -1,3 +1,4 @@
+import { isPublishErrorCode } from "./error-codes.js";
 import { mkdirSync, lstatSync, realpathSync, openSync, closeSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -87,7 +88,7 @@ export async function publishArticle(article, destinations, cwd, { confirmed = f
         if (result?.ok !== true || !validSavedId(result.postId)) fail('PUBLISH_RESULT_INVALID', 'The adapter did not confirm a saved post.');
         results.push({ platform, status: result.skipped ? 'skipped' : 'succeeded', postId: result.postId });
       } catch (error) {
-        const code = error instanceof UserError && /^(?:VELOG|TISTORY|BLOGGER|KEYFLOW|PUBLISH)_[A-Z_]+$/.test(error.code) ? error.code : 'PUBLISH_TARGET_FAILED';
+        const code = error instanceof UserError && isPublishErrorCode(error.code) ? error.code : 'PUBLISH_TARGET_FAILED';
         results.push({ platform, status: 'failed', error: { code }, automaticRetry: false,
           ...localOutcome(implementations[platform], article, destinations[platform], cwd) });
       }

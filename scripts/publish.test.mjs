@@ -27,6 +27,14 @@ function mocked(failure) {
   }]));
   return { calls, implementations };
 }
+test('common publish suppresses fabricated prefixed error identifiers', async t => {
+  const f = fixture(t), m = mocked();
+  m.implementations.velog.push = async () => fail('VELOG_SECRET_CONTENT', 'SECRET');
+  const result = await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations);
+  assert.equal(result.results[0].error.code, 'PUBLISH_TARGET_FAILED');
+  assert.equal(result.results[0].automaticRetry, false);
+  assert.doesNotMatch(JSON.stringify(result), /SECRET/);
+});
 test('explicit confirmation precedes all adapter checks or writes', async t => {
   const f = fixture(t), m = mocked();
   await assert.rejects(() => publishArticle(f.article, f.destinations, f.cwd, {}, m.implementations), { code: 'PUBLISH_CONFIRM_REQUIRED' });

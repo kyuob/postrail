@@ -1,3 +1,5 @@
+export { printBlogger } from "./blogger-output.js";
+import { parseArguments } from "./arguments.js";
 import path from 'node:path';
 import { fail, loadArticle, loadConfig, targets } from './core.js';
 import { accountName, numericId } from './blogger-client.js';
@@ -11,16 +13,11 @@ export async function bloggerCommand(args) {
   if (!['check', 'status', 'login', 'blogs', 'get', 'push', 'inspect', 'reconcile'].includes(action)) fail('INVALID_ARGUMENT', 'Use blogger check, status, login, blogs, get, push, inspect or reconcile.');
   const recovery = ['inspect', 'reconcile'].includes(action);
   const allowed = action === 'login' ? ['--account', '--client-config'] : action === 'blogs' ? ['--account', '--json'] : ['--json', '--config', ...(action === 'check' ? [] : ['--account', '--blog-id']), ...(action === 'push' ? ['--confirm'] : []), ...(recovery ? ['--published-to'] : []), ...(action === 'reconcile' ? ['--confirm', '--review', '--accept-tags'] : [])];
-  const options = {}; let file;
-  for (let i = 0; i < rest.length; i++) {
-    const arg = rest[i];
-    if (arg.startsWith('-')) {
-      if (!allowed.includes(arg) || Object.hasOwn(options, arg)) fail('INVALID_ARGUMENT', 'Unknown or repeated Blogger option.');
-      if (['--json', '--confirm', '--accept-tags'].includes(arg)) options[arg] = true;
-      else { const value = rest[++i]; if (!value || value.startsWith('-')) fail('INVALID_ARGUMENT', 'Option requires a value.'); options[arg] = value; }
-    } else if (file || ['login', 'blogs'].includes(action)) fail('INVALID_ARGUMENT', 'Unexpected Blogger argument.');
-    else file = arg;
-  }
+  const { options, file } = parseArguments(rest, {
+    allowed, positional: !['login', 'blogs'].includes(action),
+    optionError: "Unknown or repeated Blogger option.",
+    argumentError: "Unexpected Blogger argument.",
+  });
   if (action !== 'check') accountName(options['--account']);
   if (action === 'login') {
     if (!options['--client-config']) fail('BLOGGER_CLIENT_REQUIRED', 'Pass --client-config with a Desktop OAuth client JSON file stored outside the repository (mode 0600).');

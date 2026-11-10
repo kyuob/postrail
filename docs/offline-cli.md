@@ -85,6 +85,13 @@ targets: [velog, tistory, keyflow, blogger]
 
 주요 오류 코드: `INVALID_ARGUMENT`, `UNSUPPORTED_COMMAND`, `INVALID_CONFIG`, `INVALID_METADATA`, `INVALID_ARTICLE`, `INVALID_IMAGE`, `READ_FAILED`, `FILE_EXISTS`, `WRITE_FAILED`, `INTERNAL_ERROR`.
 
+| 결과 | 종료 코드 |
+| --- | --- |
+| 성공 | 0 |
+| 오류 | 1 |
+
+위 핵심 오류 목록과 종료 코드는 소스의 공통 오류 계약과 문서 검사에서 대조한다. 공통 publish는 등록된 플랫폼 오류 식별자만 전달하며, 알 수 없는 식별자는 `PUBLISH_TARGET_FAILED`로 바꾼다. 원격 응답이나 예외 메시지를 오류 코드에 섞지 않는다.
+
 `plan`의 `ok: true`와 종료 코드 0은 계획을 정상 작성했다는 뜻이다. 대상 계정과 전송 승인을 받지 않는 오프라인 계획이므로 `ready: false`, 각 계획의 `canPublish`도 false다. 벨로그·티스토리·블로거는 `status: experimental`, KeyFlow는 `implemented`다. 공통 blocker는 `DESTINATIONS_REQUIRED`, `CONFIRM_REQUIRED`이며 플랫폼별 공개 상태·이미지 제약이 추가된다. 실제 전송은 [publish 명령](publish.md)의 대상 파일과 명시적 확인으로 진행한다. 계획 생성은 발행 성공을 의미하지 않는다. `preview --json`은 HTML을 `html` 필드에 담고, `--output`과 함께 쓰면 HTML 대신 출력 경로를 반환한다.
 
 ## 검증 범위

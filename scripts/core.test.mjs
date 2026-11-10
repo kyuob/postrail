@@ -6,6 +6,34 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { loadArticle, loadConfig, preview } from "../src/core.js";
+import { parseArguments } from '../src/arguments.js';
+import { ERROR_CODES, EXIT_CODES, isPublishErrorCode } from '../src/error-codes.js';
+import { printPublish } from '../src/publish-output.js';
+
+test('shared arguments preserve strict boundaries and exact caller error messages', () => {
+  const spec = { allowed: ['--json', '--account'], optionError: 'bad option', argumentError: 'bad path' };
+  assert.deepEqual(parseArguments(['--account', 'tester', 'article.md', '--json'], spec), { file: 'article.md', options: { '--account': 'tester', '--json': true } });
+  for (const args of [['--json', '--json'], ['--unknown'], ['--account=tester'], ['--']]) assert.throws(() => parseArguments(args, spec), { code: 'INVALID_ARGUMENT', message: 'bad option' });
+  for (const args of [['--account'], ['--account', '--json'], ['--account', '']]) assert.throws(() => parseArguments(args, spec), { code: 'INVALID_ARGUMENT', message: 'Option requires a value.' });
+  assert.throws(() => parseArguments(['a.md', 'b.md'], spec), { message: 'bad path' });
+  assert.throws(() => parseArguments(['a.md'], { ...spec, positional: false }), { message: 'bad path' });
+});
+
+test('error contract rejects forged adapter codes and has stable exit statuses', () => {
+  assert.deepEqual(EXIT_CODES, { success: 0, error: 1 });
+  assert(isPublishErrorCode('TISTORY_UNKNOWN_RESULT'));
+  assert(isPublishErrorCode('BLOGGER_RECOVERY_STALE'));
+  for (const code of ['VELOG_SECRET_CONTENT', '__proto__', 'INVALID_ARGUMENT', undefined]) assert.equal(isPublishErrorCode(code), false);
+  const all = Object.values(ERROR_CODES).flat();
+  assert.equal(new Set(all).size, all.length);
+});
+
+test('publish text retains unresolved-write guidance and saved IDs', t => {
+  const lines = [];
+  t.mock.method(console, 'log', line => lines.push(line));
+  printPublish({ offline: false, results: [{ platform: 'velog', status: 'failed', postId: 'saved-id', error: { code: 'VELOG_UNKNOWN_RESULT' }, localStatus: 'unknown', nextAction: 'inspect_remote' }] });
+  assert.deepEqual(lines, ['  velog: failed (saved-id) — VELOG_UNKNOWN_RESULT; local state: unknown; inspect the saved remote result; do not resend an unresolved write']);
+});
 
 const cli = fileURLToPath(new URL("../dist/cli.js", import.meta.url));
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII=", "base64");

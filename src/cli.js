@@ -1,12 +1,14 @@
 #!/usr/bin/env node
+import { EXIT_CODES } from "./error-codes.js";
+import { parseArguments } from "./arguments.js";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { UserError, fail, initialize, loadConfig, loadArticle, targets, summary, preview, writeNew } from "./core.js";
-import { keyflowCommand } from "./keyflow-command.js";
-import { velogCommand } from "./velog-command.js";
-import { tistoryCommand } from "./tistory-command.js";
-import { bloggerCommand } from "./blogger-command.js";
-import { publishCommand } from "./publish-command.js";
+import { keyflowCommand, printKeyflow } from "./keyflow-command.js";
+import { velogCommand, printVelog } from "./velog-command.js";
+import { tistoryCommand, printTistory } from "./tistory-command.js";
+import { bloggerCommand, printBlogger } from "./blogger-command.js";
+import { publishCommand, printPublish } from "./publish-command.js";
 import { publishCapabilities } from "./publish.js";
 import { inspectImages } from './images.js';
 
@@ -69,103 +71,26 @@ function parse() {
   const [command, ...rest] = args;
   if (!["init", "validate", "images", "preview", "plan"].includes(command)) fail("UNSUPPORTED_COMMAND", "Unsupported command or arguments. Run postrail --help for supported commands.");
   const allowed = command === "init" ? ["--json"] : ["--json", "--config", ...(command === "preview" ? ["--output"] : []), ...(command === "plan" ? ["--to"] : [])];
-  const options = {};
-  let file;
-  for (let index = 0; index < rest.length; index++) {
-    const argument = rest[index];
-    if (argument.startsWith("-")) {
-      if (!allowed.includes(argument) || Object.hasOwn(options, argument)) fail("INVALID_ARGUMENT", "Unknown or repeated option. Run postrail --help.");
-      if (argument === "--json") options[argument] = true;
-      else {
-        const value = rest[++index];
-        if (!value || value.startsWith("-")) fail("INVALID_ARGUMENT", "Option requires a value.");
-        options[argument] = value;
-      }
-    } else if (file || command === "init") fail("INVALID_ARGUMENT", "Unexpected argument. Run postrail --help.");
-    else file = argument;
-  }
+  const { options, file } = parseArguments(rest, { allowed, positional: command !== "init" });
   if (command !== "init" && !file) fail("INVALID_ARGUMENT", "An article path is required.");
   return { command, file, options };
 }
 
-function printRecovery(result) {
-  if (result.command.endsWith(' reconcile')) return console.log(`Local journal reconciled: ${result.postId}; private backup verified; no remote post was written.`);
-  console.log(`${result.command}: ${result.postId}; local state: ${result.localStatus}`);
-  for (const [field, matches] of Object.entries(result.comparisons)) console.log(`  ${field}: ${matches ? 'matches' : 'not verified or different'}`);
-  console.log(`  visibility: intended=${result.visibility.intended}; actual=${result.visibility.actual}`);
-  console.log(`  tags: intended=${JSON.stringify(result.tags.intended)}; actual=${JSON.stringify(result.tags.actual)}`);
-  if (result.preserved) console.log(`  preserved editor settings: ${JSON.stringify(result.preserved)}`);
-  console.log(`  local reconciliation eligible: ${result.canReconcile}; review hash: ${result.reviewHash}`);
-}
+const commands = {
+  keyflow: { run: keyflowCommand, print: printKeyflow },
+  velog: { run: velogCommand, print: printVelog },
+  tistory: { run: tistoryCommand, print: printTistory },
+  blogger: { run: bloggerCommand, print: printBlogger },
+  publish: { run: publishCommand, print: printPublish },
+};
+
 async function main() {
-  if (args[0] === 'publish') {
-    const result = await publishCommand(args.slice(1));
+  if (Object.hasOwn(commands, args[0])) {
+    const command = commands[args[0]];
+    const result = await command.run(args.slice(1));
     if (json) console.log(JSON.stringify(result));
-    else if (result.offline) {
-      console.log('Offline publish preflight:');
-      for (const target of result.preflight) console.log(`  ${target.platform}: ${target.visibility}; ${target.blockers.length ? target.blockers.join(', ') : 'ready for explicit confirmation'}`);
-    } else {
-      for (const target of result.results) {
-        const id = target.postId ? ` (${target.postId})` : '';
-        if (target.status !== 'failed') console.log(`  ${target.platform}: ${target.status}${id}`);
-        else {
-          const next = target.nextAction === 'inspect_remote' ? 'inspect the saved remote result; do not resend an unresolved write'
-            : target.nextAction === 'review_inputs' ? 'review inputs and platform status before another send'
-            : 'inspect local journals and platform status before another send';
-          console.log(`  ${target.platform}: failed${id} — ${target.error.code}; local state: ${target.localStatus}; ${next}`);
-        }
-      }
-    }
-    if (!result.ok) process.exitCode = 1;
-    return;
-  }
-  if (args[0] === "blogger") {
-    const result = await bloggerCommand(args.slice(1));
-    if (json) console.log(JSON.stringify(result));
-    else if (['blogger inspect', 'blogger reconcile'].includes(result.command)) printRecovery(result);
-    else if (result.command === "blogger status") console.log(`Local Blogger state: ${result.state.status}`);
-    else if (result.command === "blogger check") console.log(result.canPush ? "Blogger offline check: passed." : `Blogger check: ${result.blockers.join(", ")}`);
-    else if (result.command === "blogger blogs") for (const blog of result.blogs) console.log(`${blog.blogId}: ${blog.name}`);
-    else if (result.command === "blogger push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Blogger ${result.visibility}: ${result.postId}`);
-    else if (result.command === "blogger get") console.log(`Blogger ${result.visibility}: ${result.postId}; matches last saved: ${result.matchesLastSaved}`);
-    else console.log(`${result.command}: complete.`);
-    return;
-  }
-  if (args[0] === "tistory") {
-    const result = await tistoryCommand(args.slice(1));
-    if (json) console.log(JSON.stringify(result));
-    else if (['tistory inspect', 'tistory reconcile'].includes(result.command)) printRecovery(result);
-    else if (result.command === "tistory status") console.log(`Local Tistory state: ${result.state.status}`);
-    else if (result.command === "tistory check") console.log(result.canPush ? "Tistory offline check: passed." : `Tistory check: ${result.blockers.join(", ")}`);
-    else if (result.command === "tistory push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Tistory ${result.visibility}: ${result.postId}\n${result.url}`);
-    else if (result.command === "tistory get") console.log(`Tistory ${result.visibility}: ${result.postId}; matches last saved: ${result.matchesLastSaved}`);
-    else console.log(`${result.command}: complete.`);
-    return;
-  }
-  if (args[0] === "velog") {
-    const result = await velogCommand(args.slice(1));
-    if (json) console.log(JSON.stringify(result));
-    else if (result.command === "velog status") console.log(`Local Velog state: ${result.state.status}`);
-    else if (result.command === "velog push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Velog ${result.visibility}: ${result.postId}\n${result.url}`);
-    else if (result.command === "velog get") console.log(`Velog ${result.visibility}: ${result.postId}; matches last saved: ${result.matchesLastSaved}`);
-    else if (result.command === 'velog inspect') {
-      console.log(`Velog inspection: ${result.postId}; local state: ${result.localStatus}`);
-      for (const [field, matches] of Object.entries(result.comparisons)) console.log(`  ${field}: ${matches ? 'matches' : 'not verified or different'}`);
-      console.log(`  visibility: intended=${result.visibility.intended}; actual=${result.visibility.actual}`);
-      console.log(`  visibility flags: intended=${JSON.stringify(result.visibility.intendedFlags)}; actual=${JSON.stringify(result.visibility.actualFlags)}`);
-      console.log(`  tags: intended=${JSON.stringify(result.tags.intended)}; actual=${JSON.stringify(result.tags.actual)}`);
-      console.log(`  local reconciliation eligible: ${result.canReconcile}; review hash: ${result.reviewHash}`);
-    }
-    else if (result.command === 'velog reconcile') console.log(`Local journal reconciled: ${result.postId}; private backup verified; no remote post was written.`);
-    else console.log(`${result.command}: complete.`);
-    return;
-  }
-  if (args[0] === "keyflow") {
-    const result = keyflowCommand(args.slice(1));
-    if (json) console.log(JSON.stringify(result));
-    else if (result.command === "keyflow push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `KeyFlow ${result.status} (${result.visibility}): ${result.postId}${result.url ? `\n${result.url}` : ""}`);
-    else if (result.command === "keyflow status") console.log(`Local KeyFlow state: ${result.state.status}${result.state.postId ? ` (${result.state.postId})` : ""}`);
-    else console.log(`${result.command}: complete.`);
+    else command.print(result);
+    if (args[0] === "publish" && !result.ok) process.exitCode = EXIT_CODES.error;
     return;
   }
   const { command, file, options } = parse();
@@ -186,7 +111,7 @@ async function main() {
         console.log(`Per-file limit: ${report.limits.fileBytes} bytes`);
         for (const line of report.guidance) console.log(line);
       }
-      if (!report.ok) process.exitCode = 1;
+      if (!report.ok) process.exitCode = EXIT_CODES.error;
       return;
     }
     const to = options["--to"] === undefined ? undefined : targets(options["--to"].split(","), "INVALID_ARGUMENT");
@@ -221,5 +146,5 @@ catch (error) {
   const message = error instanceof UserError ? error.message : "Unexpected failure. Check local and remote results before retrying an upload.";
   const output = json ? JSON.stringify({ ok: false, error: { code, message } }) : `${code}: ${message}`;
   (json ? process.stdout : process.stderr).write(output + "\n");
-  process.exitCode = 1;
+  process.exitCode = EXIT_CODES.error;
 }

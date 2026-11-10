@@ -5,8 +5,22 @@ import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import MarkdownIt from 'markdown-it';
 import { parseDocument } from 'yaml';
+import { ERROR_CODES, EXIT_CODES } from '../src/error-codes.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const offlineDoc = readFileSync(path.join(root, 'docs/offline-cli.md'), 'utf8');
+const documentedCore = [...offlineDoc.match(/^주요 오류 코드: (.+)$/m)[1].matchAll(/`([A-Z_]+)`/g)].map(match => match[1]);
+assert.deepEqual(documentedCore.sort(), [...ERROR_CODES.core].sort(), 'Core error codes and documentation must agree.');
+assert(offlineDoc.includes(`| 성공 | ${EXIT_CODES.success} |`) && offlineDoc.includes(`| 오류 | ${EXIT_CODES.error} |`), 'Documented exit statuses must match the CLI contract.');
+const registered = new Set(Object.values(ERROR_CODES).flat());
+for (const file of readdirSync(path.join(root, 'src')).filter(name => name.endsWith('.js') && name !== 'error-codes.js')) {
+  const source = readFileSync(path.join(root, 'src', file), 'utf8');
+  for (const [, code] of source.matchAll(/['"]((?:VELOG|TISTORY|BLOGGER|KEYFLOW|PUBLISH)_[A-Z_]+)['"]/g)) assert(registered.has(code), `Unregistered public error identifier: ${file}: ${code}`);
+  for (const [, suffix] of source.matchAll(/\$\{prefix\}(_[A-Z_]+)/g)) {
+    const prefixes = file === 'manual-chrome-login.js' ? ['VELOG', 'TISTORY'] : ['TISTORY', 'BLOGGER'];
+    for (const prefix of prefixes) assert(registered.has(prefix + suffix), `Unregistered shared error identifier: ${file}: ${prefix + suffix}`);
+  }
+}
 const files = ['README.md', 'README.ko.md', 'CONTRIBUTING.md', 'SECURITY.md', 'CHANGELOG.md', ...readdirSync(path.join(root, 'docs')).filter(n => n.endsWith('.md')).map(n => 'docs/' + n)];
 const md = new MarkdownIt(); let links = 0;
 for (const file of files) {
