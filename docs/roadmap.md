@@ -1,6 +1,6 @@
 # Postrail v0.1.0 개발 계획
 
-목표: Markdown 하나를 네 플랫폼으로 보내고 결과를 추적하는 CLI. 오프라인 CLI, 개별 어댑터와 [공통 publish](publish.md)를 제공한다. KeyFlow 추가 검증은 종료했다. Velog/Tistory/Blogger의 초안·비공개 생성·조회·같은 ID 수정·재전송 건너뛰기는 [실계정으로 확인](bundled-validation-results.md)했다. 공통 다중 전송은 모의 검사 단계이며, 화면 표시·공개 발행·첫 릴리스는 아직 미검증이다.
+목표: Markdown 하나를 네 플랫폼으로 보내고 결과를 추적하는 CLI. 오프라인 CLI, 개별 어댑터와 [공통 publish](publish.md)를 제공한다. KeyFlow 추가 검증은 종료했다. Velog/Tistory/Blogger의 초안·비공개 개별 저장과 공통 전송의 호환 가능한 두 조합을 실계정으로 확인했다. [7단계](stage7-status.md)의 문서·로컬 설치 검수·CI 구성은 마쳤으며, 원격 OS별 실행 결과·화면 표시·공개 발행·첫 릴리스는 남아 있다.
 
 ## 진행 상태
 
@@ -14,8 +14,8 @@
 | 4. Velog 어댑터 | 실험적 구현·초안 실검증 완료 | 일반 Chrome 수동 로그인·계정 확인·동일 ID 수정 검증. 화면·공개 범위 미검증 |
 | 5. Tistory 어댑터 | 실험적 구현·비공개 실검증 완료 | 일반 Chrome 세션 복원·Config.post/entry·동일 ID 수정·이미지 메타데이터 저장 차이 확인. draft 슬롯 미지원 |
 | 5B. Google Blogger 어댑터 | 실험적 구현·초안 실검증 완료 | Desktop OAuth·ADMIN 대상·동일 ID PATCH 검증. private/로컬 이미지/Windows 인증 미지원: [사용법](blogger.md) |
-| 6. 다중 전송·복구 | 구현·모의 검사 완료, 묶음 live 미검증 | 전체 사전 검사, 부분 성공 보존, 기존 unknown/ID 보호, 공통·개별 동시 실행 차단 |
-| 7. 배포 검수 | 대기 | 깨끗한 환경 설치, 플랫폼별 E2E, 문서·패키지 검수 |
+| 6. 다중 전송·복구 | 모의 검사·호환 조합의 live 검증 완료 | 전체 사전 검사, 부분 성공 보존, unknown/ID 보호, 동시 실행 차단. private V/T·draft V/B의 실제 저장·수정·skip 확인 |
+| 7. 배포 검수 | 문서·로컬 검수·CI 구성 완료 | macOS ARM64 Node22 패키지 설치와 마지막 다중 E2E 통과. 원격 CI·육안 표시 범위는 미확인으로 명시 |
 | 8. 첫 릴리스 | 대기 | 명시적 배포 승인 후 태그·패키지·릴리스 노트 공개 |
 
 KeyFlow는 사용자 확정으로 추가 검증 범위에서 제외한다. Velog/Tistory/Blogger의 실계정 검증은 사용자 승인 범위로 [묶어서 진행](bundled-validation.md)했다. 초안·비공개 저장 검증과 미확인인 화면·공개 발행을 구분하며 네 플랫폼의 모든 기능이 검증됐다고 표시하지 않는다.

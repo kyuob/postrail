@@ -16,13 +16,16 @@
   "bin": {
     "postrail": "./dist/cli.js"
   },
-  "files": ["dist/cli.js", "README.md", "LICENSE", "docs", "examples"],
+  "files": ["dist/cli.js", "README.md", "README.ko.md", "LICENSE", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md", "docs", "examples"],
   "engines": {
     "node": ">=22",
     "bun": ">=1.3"
   },
   "scripts": {
     "dev": "bun src/cli.js",
+    "prepack": "bun run build",
+    "check:docs": "node scripts/docs-check.mjs",
+    "check:package": "node scripts/package-smoke.mjs",
     "build": "bun build src/cli.js --target=node --external=playwright-core --outdir=dist",
     "smoke": "bun scripts/smoke.mjs",
     "test": "node --test scripts/core.test.mjs scripts/keyflow.test.mjs scripts/velog.test.mjs scripts/tistory.test.mjs scripts/blogger.test.mjs scripts/publish.test.mjs",

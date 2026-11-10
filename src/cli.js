@@ -53,7 +53,7 @@ publish --dry-run checks all selected targets offline; --confirm sends sequentia
 Partial results are preserved. Uncertain writes are never automatically retried.
 Velog/Tistory/Blogger remain experimental; scoped draft/private account tests passed.
 Tistory draft slots and Blogger private/local images are unsupported.
-Generic publish orchestration is mock-tested; its combined live flow is unverified.`;
+Scoped common private/draft flows passed; public publishing and visual rendering remain unverified.`;
 
 function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };

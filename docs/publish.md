@@ -1,6 +1,6 @@
 # Common publish command
 
-`publish` sends one Markdown article through the existing platform adapters, sequentially. It does not log in automatically. Log in with each platform's command first, then review the article, visibility and exact destinations. The common flow is tested with mocked targets; the separate adapters have scoped real draft/private validation. Combined live orchestration, public publishing and visual rendering have not been validated.
+`publish` sends one Markdown article through the existing platform adapters, sequentially. It does not log in automatically. Log in with each platform's command first, then review the article, visibility and exact destinations. Mocks cover partial results and guards; real common Velog/Tistory private and Velog/Blogger draft flows passed creation, same-ID update, readback and unchanged skip in [stage7](stage7-status.md). No new KeyFlow live action was performed. Public publishing and visual rendering remain unverified.
 
 ## Destinations
 
@@ -24,7 +24,7 @@ All capability checks finish before any selected target is sent. A missing desti
 
 With confirmation, targets run in the selected order. JSON contains one result per target: `succeeded`, `skipped`, or `failed`. A failure has a sanitized `error.code` and `automaticRetry: false`; arbitrary server error text is withheld. Exit status is 1 if preflight is blocked or any target fails, and 0 if all selected targets succeed or skip unchanged content.
 
-Success on one target is retained when another fails. The command does not roll back, delete, log in again, retry a write or try another mutation schema. Each adapter keeps its existing account/blog/article journal and remote ID. Repeating a resolved invocation lets the adapter verify an unchanged post and skip it; remote edits remain conflicts. An unknown write stays blocked until the remote result is reconciled. Inspect the platform's `status` and `get` commands, then retry only resolved targets with `--to`. A user-deleted remote article is not silently recreated.
+Success on one target is retained when another fails. The command does not roll back, delete, log in again, retry a write or try another mutation schema. Each adapter keeps its existing account/blog/article journal and remote ID. Velog/Tistory/Blogger check remote content before skipping unchanged input and stop on detected remote edits. KeyFlow skips from its local hash and does not detect remote manual edits; updates can overwrite them, and remote `get` is unavailable. An unknown write stays blocked until the remote result is reconciled. Inspect platform `status` and supported `get` commands or the service's own management screen, then retry only resolved targets with `--to`. A user-deleted remote article is not silently recreated.
 
 Common invocations lock the article ID inside `.postrail/publish/` for their entire execution. Per-platform locks still protect individual writes, including direct platform commands. A crashed common invocation leaves its lock in place. Stop any active process and inspect every affected journal before manually removing an abandoned lock; the CLI never assumes an old lock is safe to remove. This is duplicate prevention, not an exactly-once guarantee.
 

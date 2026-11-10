@@ -2,13 +2,17 @@
 
 Write once. Publish across your blogs.
 
+[한국어](README.ko.md) · [Installation](docs/installation.md) · [Login](docs/login.md) · [FAQ](docs/faq.md) · [Support matrix](docs/support.md)
+
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
 
-> **Status: offline CLI, per-platform adapters and experimental common publishing.** KeyFlow acceptance is closed. Velog/Tistory/Blogger passed scoped draft/private creation, same-ID update, readback and unchanged-skip checks. Common multi-target orchestration is mock-tested; combined live flow, public publishing and visual rendering remain unverified. Tistory draft slots and Blogger private/local images are unsupported. No registry package has been released.
+> **Status: offline CLI, per-platform adapters and experimental common publishing.** KeyFlow acceptance is closed. Per-adapter checks and common Velog/Tistory private + Velog/Blogger draft flows passed create, same-ID update, readback and unchanged-skip validation. Public publishing, visual rendering and remote OS-matrix results remain unverified. Tistory draft slots and Blogger private/local images are unsupported. No registry package has been released.
 
 ## Development
 
 Requires [Bun](https://bun.sh/) 1.3+ for development and Node.js 22+ for the built CLI.
+
+No registry package is released yet. Follow the [source/local-package installation guide](docs/installation.md); do not install an unrelated registry package by name. Velog/Tistory manual authentication currently supports macOS only.
 
 ```sh
 bun install --frozen-lockfile
@@ -81,7 +85,7 @@ See the [implementation roadmap](docs/roadmap.md) and [source reference assessme
 
 ## Contributing
 
-Issues and pull requests are welcome. Keep changes focused, run `bun run check`, and never commit credentials, browser sessions, or personal drafts. Describe the problem and how you verified the change in your pull request.
+See [CONTRIBUTING](CONTRIBUTING.md), [SECURITY](SECURITY.md), [CHANGELOG](CHANGELOG.md) and the [stage7 verification record](docs/stage7-status.md). Never commit credentials, browser sessions or personal drafts. Describe the problem and the verification scope in your pull request.
 
 ## License
 
