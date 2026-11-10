@@ -1,6 +1,8 @@
 # Postrail v0.1.0
 
-First experimental GitHub release · 2026-11-10
+Published experimental GitHub prerelease · 2026-11-10
+
+These notes describe the historical v0.1.0 release. Later onboarding and stability documentation changes in the working tree are unreleased until a separate release is approved.
 
 Postrail publishes Markdown to Velog, Tistory, KeyFlow and Google Blogger through a common CLI. It validates all selected targets before sending sequentially, preserves remote IDs and partial results, and stops unresolved writes instead of recreating posts.
 

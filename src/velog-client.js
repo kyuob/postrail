@@ -44,10 +44,14 @@ export class VelogClient {
       return value;
     } finally { await response.dispose().catch(() => {}); }
   }
-  async graphql(query, variables = {}) {
+  async graphql(query, variables = {}, onPartialData) {
     const operationName = /(?:query|mutation)\s+(\w+)/.exec(query)[1];
     const value = await this.send(VELOG_GRAPHQL, { data: { operationName, query, variables } });
-    if (value.errors?.length || !value.data || typeof value.data !== "object") fail("VELOG_GRAPHQL_FAILED", "Velog did not confirm the operation. Server errors were withheld; no alternate schema was tried.");
+    const hasData = value.data && typeof value.data === 'object' && !Array.isArray(value.data);
+    // A mutation may have committed even when another requested field failed.
+    // Only the adapter's ownership validator may retain identity; this stays an error.
+    if (value.errors?.length && hasData && onPartialData) onPartialData(value.data);
+    if (value.errors?.length || !hasData) fail("VELOG_GRAPHQL_FAILED", "Velog did not confirm the operation. Server errors were withheld; no alternate schema was tried.");
     return value.data;
   }
   async currentUser() {
@@ -55,7 +59,10 @@ export class VelogClient {
     return currentUser;
   }
   async read(id) { return (await this.graphql(READ_POST, { input: { id } })).post; }
-  async write(input, update) { return (await this.graphql(update ? EDIT_POST : WRITE_POST, { input }))[update ? "editPost" : "writePost"]; }
+  async write(input, update, retainIdentity) {
+    const field = update ? 'editPost' : 'writePost';
+    return (await this.graphql(update ? EDIT_POST : WRITE_POST, { input }, data => retainIdentity?.(data[field])))[field];
+  }
   async upload(image, name) {
     const result = await this.send(VELOG_UPLOAD, { multipart: { image: { name, mimeType: image.mime, buffer: image.data }, type: "post" } });
     let url;

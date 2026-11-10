@@ -50,6 +50,32 @@ function server() {
 }
 const rejects = (fn, code) => assert.rejects(fn, error => error.code === code);
 
+test('folded tag collisions fail offline before session or journal creation', async t => {
+  const f = fixture(t, 'public'); writeFileSync(f.file, f.text.replace('[개발, CLI]', '[CLI, cli]'));
+  assert.throws(() => checkVelog(f.article()), { code: 'VELOG_TAG_COLLISION' });
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, () => assert.fail('must not open session')), 'VELOG_TAG_COLLISION');
+  assert.equal(f.state().status, 'not_submitted');
+});
+test('incomplete owned mutation response retains ID without readback or retry', async t => {
+  const f = fixture(t); const s = server();
+  s.client.write = async () => { s.state.writes.push({}); return { id: 'partial-post', user }; };
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, s.session), 'VELOG_RESPONSE_INVALID');
+  assert.equal(f.state().status, 'unknown'); assert.equal(f.state().postId, 'partial-post'); assert.equal(s.state.reads.length, 0);
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, () => assert.fail('must not retry')), 'VELOG_UNKNOWN_RESULT');
+  assert.equal(s.state.writes.length, 1);
+});
+for (const owner of [{ ...user, id: 'other' }, { ...user, username: 'other' }, undefined]) test(`untrusted incomplete response never retains ID: ${JSON.stringify(owner)}`, async t => {
+  const f = fixture(t); const s = server(); s.client.write = async () => ({ id: 'untrusted-id', user: owner });
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, s.session), 'VELOG_RESPONSE_INVALID');
+  assert.equal(f.state().status, 'unknown'); assert.equal(f.state().postId, undefined);
+});
+test('partial update response cannot replace the existing saved ID', async t => {
+  const f = fixture(t); const s = server(); await pushVelog(f.article(), 'tester', f.dir, true, s.session);
+  writeFileSync(f.file, f.text + '수정'); s.client.write = async () => ({ id: 'different-id', user });
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, s.session), 'VELOG_RESPONSE_INVALID');
+  assert.equal(f.state().postId, 'post-1'); assert.equal(f.state().status, 'unknown');
+});
+
 test('server ASCII tag casing is accepted, but later casing edits still conflict', async t => {
   const f = fixture(t); const s = server();
   const read = s.client.read;
@@ -210,6 +236,24 @@ function transport(value, status = 200) {
   } });
   return { client, calls, disposed: () => disposed };
 }
+test('partial GraphQL mutation errors retain only owned identity and remain unknown', async t => {
+  const f = fixture(t); const m = transport({ data: { writePost: { id: 'partial-graphql', user } }, errors: [{ message: 'SECRET' }] });
+  await assert.rejects(() => pushVelog(f.article(), 'tester', f.dir, true, async (_account, action) => action(m.client, user)), e => e.code === 'VELOG_GRAPHQL_FAILED' && !e.message.includes('SECRET'));
+  assert.equal(f.state().postId, 'partial-graphql'); assert.equal(f.state().status, 'unknown'); assert.equal(m.calls.length, 1); assert.equal(m.disposed(), 1);
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, () => assert.fail('must not reopen session')), 'VELOG_UNKNOWN_RESULT');
+  assert.equal(m.calls.length, 1);
+});
+test('partial GraphQL update with a different ID preserves the existing identity', async t => {
+  const f = fixture(t); const s = server(); await pushVelog(f.article(), 'tester', f.dir, true, s.session); writeFileSync(f.file, f.text + '수정');
+  const m = transport({ data: { editPost: { id: 'different-id', user } }, errors: [{ message: 'SECRET' }] }); m.client.read = s.client.read;
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, async (_account, action) => action(m.client, user)), 'VELOG_RESPONSE_INVALID');
+  assert.equal(f.state().status, 'unknown'); assert.equal(f.state().postId, 'post-1'); assert.equal(m.calls.length, 1);
+});
+test('partial GraphQL errors with wrong owner cannot retain identity', async t => {
+  const f = fixture(t); const m = transport({ data: { writePost: { id: 'bad-graphql', user: { ...user, id: 'other' } } }, errors: [{ message: 'SECRET' }] });
+  await rejects(() => pushVelog(f.article(), 'tester', f.dir, true, async (_account, action) => action(m.client, user)), 'VELOG_RESPONSE_INVALID');
+  assert.equal(f.state().postId, undefined); assert.equal(f.state().status, 'unknown'); assert.equal(m.calls.length, 1);
+});
 test('v3 transport has fixed endpoints, no redirects/retries, and input object schema', async () => {
   const f = transport({ data: { writePost: { id: 'id' }, editPost: { id: 'id' } } });
   await f.client.write({ title: 'title' }, false); await f.client.write({ id: 'id' }, true);

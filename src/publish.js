@@ -3,11 +3,11 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fail, readBounded, UserError, PLATFORMS } from './core.js';
 import { velogAccount } from './velog-client.js';
-import { checkVelog, pushVelog } from './velog.js';
+import { checkVelog, pushVelog, statusVelog } from './velog.js';
 import { tistoryTarget } from './tistory-client.js';
-import { checkTistory, pushTistory } from './tistory.js';
+import { checkTistory, pushTistory, statusTistory } from './tistory.js';
 import { accountName as bloggerAccount, numericId } from './blogger-client.js';
-import { checkBlogger, pushBlogger } from './blogger.js';
+import { checkBlogger, pushBlogger, statusBlogger } from './blogger.js';
 import { accountName as keyflowAccount, pushKeyflow } from './keyflow.js';
 
 function object(value, allowed) {
@@ -30,12 +30,25 @@ export function loadDestinations(file) {
   return value.destinations;
 }
 const adapters = {
-  velog: { check: checkVelog, push: (a, d, cwd) => pushVelog(a, d.account, cwd, true) },
-  tistory: { check: checkTistory, push: (a, d, cwd) => pushTistory(a, tistoryTarget(d.blog, d.blogId), cwd, true) },
-  blogger: { check: checkBlogger, push: (a, d, cwd) => pushBlogger(a, d.account, d.blogId, cwd, true) },
+  velog: { check: checkVelog, push: (a, d, cwd) => pushVelog(a, d.account, cwd, true), status: (a, d, cwd) => statusVelog(a, d.account, cwd) },
+  tistory: { check: checkTistory, push: (a, d, cwd) => pushTistory(a, tistoryTarget(d.blog, d.blogId), cwd, true), status: (a, d, cwd) => statusTistory(a, tistoryTarget(d.blog, d.blogId), cwd) },
+  blogger: { check: checkBlogger, push: (a, d, cwd) => pushBlogger(a, d.account, d.blogId, cwd, true), status: (a, d, cwd) => statusBlogger(a, d.account, d.blogId, cwd) },
   // Do not run the official KeyFlow CLI during common offline preflight.
   keyflow: { check: () => ({ blockers: [] }), push: (a, d, cwd) => pushKeyflow(a, d.account, cwd, true) },
 };
+const validSavedId = value => typeof value === 'string' && /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,199}$/.test(value);
+function localOutcome(adapter, article, destination, cwd) {
+  // Never trust identity or arbitrary server fields attached to an exception.
+  // This is an offline journal read, not an extra authentication/readback attempt.
+  try {
+    const state = adapter.status?.(article, destination, cwd)?.state;
+    if (!state || !['unknown', 'pending', 'succeeded', 'not_submitted'].includes(state.status)
+      || state.postId !== undefined && !validSavedId(state.postId)
+      || state.status === 'not_submitted' && state.postId !== undefined || state.status === 'succeeded' && !state.postId) throw Error('Invalid local outcome');
+    return { localStatus: state.status, ...(state.postId ? { postId: state.postId } : {}), nextAction: state.status === 'not_submitted' ? 'review_inputs' : 'inspect_remote' };
+  } catch { /* Missing/corrupt storage must not hide prior target results. */ }
+  return { localStatus: 'unavailable', nextAction: 'inspect_local_state' };
+}
 export function publishCapabilities(article) {
   return article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility,
     status: platform === 'keyflow' ? 'implemented' : 'experimental', canPublish: false,
@@ -70,11 +83,12 @@ export async function publishArticle(article, destinations, cwd, { confirmed = f
     for (const { platform } of preflight) {
       try {
         const result = await implementations[platform].push(article, destinations[platform], cwd);
-        if (result?.ok !== true || typeof result.postId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(result.postId)) fail('PUBLISH_RESULT_INVALID', 'The adapter did not confirm a saved post.');
+        if (result?.ok !== true || !validSavedId(result.postId)) fail('PUBLISH_RESULT_INVALID', 'The adapter did not confirm a saved post.');
         results.push({ platform, status: result.skipped ? 'skipped' : 'succeeded', postId: result.postId });
       } catch (error) {
         const code = error instanceof UserError && /^(?:VELOG|TISTORY|BLOGGER|KEYFLOW|PUBLISH)_[A-Z_]+$/.test(error.code) ? error.code : 'PUBLISH_TARGET_FAILED';
-        results.push({ platform, status: 'failed', error: { code }, automaticRetry: false });
+        results.push({ platform, status: 'failed', error: { code }, automaticRetry: false,
+          ...localOutcome(implementations[platform], article, destinations[platform], cwd) });
       }
     }
     return { ok: results.every(r => r.status !== 'failed'), command: 'publish', offline: false, results };

@@ -6,6 +6,8 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { loadArticle, loadConfig, fail } from '../src/core.js';
+import { checkVelog } from '../src/velog.js';
+import { checkTistory } from '../src/tistory.js';
 import { publishArticle, loadDestinations } from '../src/publish.js';
 
 function fixture(t, visibility = 'private', targets = ['velog', 'tistory']) {
@@ -42,6 +44,36 @@ test('all-target preflight blocks writes when the last target rejects visibility
   const result = await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations);
   assert.equal(result.ok, false); assert.equal(result.offline, true); assert.deepEqual(m.calls, ['check:velog']);
   assert.equal(existsSync(path.join(f.cwd, '.postrail')), false);
+});
+for (const [platform, check, code] of [['velog', checkVelog, 'VELOG_TAG_COLLISION'], ['tistory', checkTistory, 'TISTORY_TAG_COLLISION']]) test(`last-target ${platform} tag collision prevents every write`, async t => {
+  const f = fixture(t, 'public', ['blogger', platform]); f.article.meta.tags = ['CLI', 'cli']; let writes = 0;
+  await assert.rejects(() => publishArticle(f.article, { ...f.destinations, blogger: { account: 'tester', blogId: '123' } }, f.cwd, { confirmed: true }, {
+    blogger: { check: () => ({ blockers: [] }), push: async () => { writes++; } }, [platform]: { check, push: async () => { writes++; } },
+  }), { code });
+  assert.equal(writes, 0); assert.equal(existsSync(path.join(f.cwd, '.postrail')), false);
+});
+for (const state of [{ status: 'unknown', postId: 'saved-id' }, { status: 'unknown', postId: '_saved' }, { status: 'unknown', postId: '-saved' }, { status: 'unknown' }, { status: 'pending', postId: 'saved-id' }, { status: 'not_submitted' }, { status: 'succeeded', postId: 'saved-id' }]) test(`failed result reports only trusted local outcome: ${JSON.stringify(state)}`, async t => {
+  const f = fixture(t), m = mocked(); let statusReads = 0;
+  m.implementations.velog.push = async () => { throw Object.assign(new Error('SECRET'), { postId: 'UNTRUSTED_SECRET', localStatus: 'succeeded' }); };
+  m.implementations.velog.status = () => { statusReads++; return { state }; };
+  const r = (await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations)).results[0];
+  assert.equal(r.status, 'failed'); assert.equal(r.localStatus, state.status); assert.equal(r.postId, state.postId); assert.equal(r.automaticRetry, false); assert.equal(statusReads, 1);
+  assert.equal(r.nextAction, state.status === 'not_submitted' ? 'review_inputs' : 'inspect_remote'); assert.doesNotMatch(JSON.stringify(r), /SECRET/);
+});
+test('unreadable local outcome keeps partial results and exposes no arbitrary data', async t => {
+  const f = fixture(t), m = mocked('tistory'); m.implementations.tistory.status = () => { throw Error('SECRET'); };
+  const r = await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations);
+  assert.equal(r.results[0].status, 'succeeded'); assert.equal(r.results[1].localStatus, 'unavailable'); assert.equal(r.results[1].nextAction, 'inspect_local_state'); assert.equal(r.results[1].postId, undefined); assert.doesNotMatch(JSON.stringify(r), /SECRET/);
+});
+for (const state of [{ status: 'SECRET', postId: 'safe' }, { status: 'unknown', postId: 'SECRET\n' }, { status: 'succeeded' }, { status: 'not_submitted', postId: 'SECRET' }]) test(`malformed local outcome is sanitized: ${JSON.stringify(state)}`, async t => {
+  const f = fixture(t), m = mocked('tistory'); m.implementations.tistory.status = () => ({ state });
+  const r = (await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations)).results[1];
+  assert.equal(r.localStatus, 'unavailable'); assert.equal(r.postId, undefined); assert.equal(r.nextAction, 'inspect_local_state'); assert.doesNotMatch(JSON.stringify(r), /SECRET/);
+});
+for (const id of ['_saved', '-saved']) test(`common success accepts a validated Velog identity: ${id}`, async t => {
+  const f = fixture(t), m = mocked(); m.implementations.velog.push = async () => ({ ok: true, postId: id });
+  const r = await publishArticle(f.article, f.destinations, f.cwd, { confirmed: true }, m.implementations);
+  assert.equal(r.ok, true); assert.equal(r.results[0].postId, id);
 });
 test('partial failure preserves successful target, continues, and never retries unknown writes', async t => {
   const f = fixture(t, 'private', ['velog', 'tistory', 'keyflow']), m = mocked('tistory');

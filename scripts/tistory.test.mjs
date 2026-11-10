@@ -35,6 +35,12 @@ const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 const upload = { url: 'https://blog.kakaocdn.net/dna/aaa/bbb/img.png?credential=test&expires=123&signature=test', key: 'aaa/bbb', filename: 'img.png' };
 const cli = fileURLToPath(new URL('../dist/cli.js', import.meta.url));
 const rejects = (fn, code) => assert.rejects(fn, e => e.code === code);
+test('folded tag collisions fail check and push before authentication', async t => {
+  const f = fixture(t, 'public'); writeFileSync(f.file, f.text.replace('[개발, CLI]', '[CLI, cli]'));
+  assert.throws(() => checkTistory(f.article()), { code: 'TISTORY_TAG_COLLISION' });
+  await rejects(() => pushTistory(f.article(), target, f.dir, true, () => assert.fail('must not open session')), 'TISTORY_TAG_COLLISION');
+  assert.equal(f.state().status, 'not_submitted');
+});
 function fixture(t, visibility = 'private', body = '한글 본문입니다.\n') {
   const dir = mkdtempSync(path.join(tmpdir(), 'postrail-tistory-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));

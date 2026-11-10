@@ -2,7 +2,7 @@ import { fail } from './core.js';
 import { tistoryTarget, withTistorySession } from './tistory-client.js';
 import { hash, journalPath, readJournal, saveJournal, locked } from './tistory-storage.js';
 import { attachment, renderTistory, canonicalHtml } from './tistory-format.js';
-import { equivalentTags } from './tags.js';
+import { equivalentTags, distinctTagIdentities } from './tags.js';
 
 function validateTarget(target) {
   const expected = tistoryTarget(target?.blog, target?.blogId);
@@ -10,6 +10,7 @@ function validateTarget(target) {
 }
 function checkArticle(article, pushing = false) {
   if (article.meta.visibility === 'draft' && pushing) fail('TISTORY_DRAFT_UNSUPPORTED', 'Tistory draft slots are not implemented. Keep draft unchanged, or explicitly choose private/public in the source after review.');
+  if (!distinctTagIdentities(article.meta.tags)) fail('TISTORY_TAG_COLLISION', 'Tags must remain distinct ignoring ASCII letter casing. Review tags such as CLI and cli before sending.');
   if (article.meta.tags.some(t => t.includes(','))) fail('TISTORY_TAG_UNSUPPORTED', 'Tistory comma-separated tags cannot preserve a tag containing a comma.');
   // Do not allow platform image substitution syntax in authored text to create untracked attachment references.
   if (article.body.includes('[##_')) fail('TISTORY_MARKUP_UNSUPPORTED', 'Platform substitution syntax is not supported in source Markdown.');

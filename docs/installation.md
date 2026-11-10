@@ -13,7 +13,7 @@
 
 ## GitHub 릴리스로 설치
 
-첫 배포는 [v0.1.0 GitHub Release](https://github.com/kyuob/postrail/releases/tag/v0.1.0)로 제공한다. npm에는 아직 공개하지 않았으며, 다른 프로젝트가 쓰는 `postrail` 패키지를 이름만으로 설치하지 않는다. 패키지 이름은 `@kyuob/postrail`, 설치 후 명령은 `postrail`이다.
+첫 배포는 공개된 실험적 [v0.1.0 GitHub 사전 릴리스](https://github.com/kyuob/postrail/releases/tag/v0.1.0)다. npm에는 아직 공개하지 않았으며, 다른 프로젝트가 쓰는 `postrail` 패키지를 이름만으로 설치하지 않는다. 패키지 이름은 `@kyuob/postrail`, 설치 후 명령은 `postrail`이다. 아래 시작 절차 보완은 아직 배포하지 않은 문서 변경이며, v0.1.0의 기존 명령으로 실행할 수 있다.
 
 릴리스에서 `kyuob-postrail-0.1.0.tgz`와 `SHA256SUMS`를 같은 폴더에 내려받아 체크섬을 확인한다. macOS는 `shasum -a 256 -c SHA256SUMS`, Linux는 `sha256sum -c SHA256SUMS`를 사용할 수 있다. 이후 해당 폴더에서 실행한다.
 
@@ -46,17 +46,58 @@ node dist/cli.js preview examples/blogger.md --output first-preview.html
 
 ## 프로젝트와 전송 대상 준비
 
-작업할 폴더에서 실행한다. 아래 `postrail`은 패키지로 설치했을 때의 명령이며, 소스 사용자는 `node /절대경로/postrail/dist/cli.js`로 바꾼다.
+새 작업 폴더를 만들고 그 폴더에서 시작한다. `init`은 설정만 만들며 원고나 대상 파일을 만들지 않는다. 먼저 텍스트 편집기로 아래 두 파일을 UTF-8로 저장한다. 로컬 이미지나 다른 파일이 필요 없는 연습용 초안이다.
 
-```sh
-postrail init
-postrail validate ./article.md --json
-postrail preview ./article.md --output ./preview.html
-postrail publish ./article.md --to velog,blogger \
-  --destinations ./my-destinations.json --dry-run --json
+`article.md`:
+
+<!-- onboarding:article -->
+```markdown
+---
+id: my-first-draft
+title: 첫 오프라인 초안
+tags: [개발, CLI]
+visibility: draft
+targets: [velog, blogger]
+---
+
+## 첫 초안
+
+이 글은 로컬 검증과 미리보기 연습용입니다.
 ```
 
-`init`은 기존 `postrail.json`을 덮어쓰지 않는다. [대상 설정 예제](../examples/destinations.json)를 복사하고 필요한 플랫폼의 사용자명·블로그 ID만 남긴다. 설정 파일에 비밀번호·토큰·쿠키를 넣지 않는다. `--dry-run`은 실제 계정을 확인하지 않는다.
+`my-destinations.json`:
+
+<!-- onboarding:destinations -->
+```json
+{
+  "version": 1,
+  "destinations": {
+    "velog": { "account": "YOUR_VELOG_USERNAME" },
+    "blogger": { "account": "your-blogger-account", "blogId": "12345" }
+  }
+}
+```
+
+이 대상은 가짜 값이며 아래 dry-run에서만 사용한다. 실제 전송 전에는 본인 계정·블로그 ID로 바꾸고 [로그인](login.md)을 별도로 완료한다. 비밀번호·토큰·쿠키는 넣지 않는다. `--dry-run`은 실제 계정이나 권한을 확인하지 않는다.
+
+전역 패키지 사용자는 다음 블록을 실행한다.
+
+<!-- onboarding:commands -->
+```sh
+postrail --version
+postrail init
+postrail validate ./article.md --json
+postrail preview ./article.md --output ./preview.html --json
+postrail publish ./article.md --to velog,blogger --destinations ./my-destinations.json --dry-run --json
+```
+
+소스 사용자는 같은 작업 폴더에서 각 줄의 `postrail` 대신 `node "/절대경로/postrail/dist/cli.js"`를 쓴다. 예를 들어 체크아웃 경로를 본인 경로로 바꾼 뒤 다음처럼 실행한다. 작업 폴더는 원고와 이력이 있는 폴더로 유지하고, 명령 파일만 절대경로로 지정한다.
+
+```sh
+node "/절대경로/postrail/dist/cli.js" validate ./article.md --json
+```
+
+`init`은 기존 `postrail.json`을 덮어쓰지 않으며 `preview.html`도 새 파일이어야 한다. 위 명령은 인증하거나 글을 올리지 않는다. 개발자는 빌드 후 `node scripts/onboarding-smoke.mjs`로 위 파일 내용과 명령 순서를 격리된 빈 폴더에서 검사할 수 있다.
 
 원고 ID는 처음 정한 뒤 유지한다. 공개 상태도 명시한다. Tistory의 임시저장은 지원하지 않으며, Blogger는 개별 비공개 글과 로컬 이미지 업로드를 지원하지 않는다. [공통 publish](publish.md)에서 호환되는 대상 조합을 확인한다.
 

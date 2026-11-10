@@ -6,7 +6,7 @@ Write once. Publish across your blogs.
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
 
-> **v0.1.0: an experimental CLI with verified publishing flows.** Korean public posts on Velog/Tistory and an English public Blogger post passed saved-ID readback, desktop rendering and clickable-image checks. Node22/24 offline CI passed on macOS/Linux/Windows. KeyFlow acceptance remains closed. Tistory draft slots and Blogger private/local images are unsupported. See the [support matrix](docs/support.md) for exact limits.
+> **v0.1.0: a published experimental GitHub prerelease with verified publishing flows.** The scoped public acceptance covered Korean posts on Velog/Tistory and an English Blogger post, including saved-ID readback, desktop rendering and clickable images. This describes the acceptance evidence, not the current language or content of those posts. Node22/24 offline CI passed on macOS/Linux/Windows. KeyFlow acceptance remains closed. Tistory draft slots and Blogger private/local images are unsupported. See the [support matrix](docs/support.md) for exact limits.
 
 ## Development
 
@@ -62,7 +62,7 @@ node dist/cli.js publish article.md --to velog,blogger --destinations my-destina
 node dist/cli.js publish article.md --to velog,blogger --destinations my-destinations.json --confirm --json
 ```
 
-All selected targets pass offline capability checks before sequential sends. Results preserve partial success; per-platform journals block unresolved writes and remote conflicts. Read the [publish guide](docs/publish.md) for visibility compatibility, recovery and concurrency locks. `bun run check:publish` verifies common orchestration and the core/experimental adapters without real accounts or additional KeyFlow-specific tests.
+All selected targets pass offline capability checks before sequential sends. Journals preserve partial success and block unresolved writes. Velog/Tistory/Blogger check for remote changes before updates; KeyFlow does not detect remote manual edits. These checks do not make concurrent remote edits atomic with a later write. Read the [publish guide](docs/publish.md) for visibility compatibility, recovery and concurrency locks. `bun run check:publish` verifies common orchestration and the core/experimental adapters without real accounts or additional KeyFlow-specific tests.
 
 마크다운 하나를 여러 블로그로 전송하는 공통 명령을 제공합니다. `--dry-run`으로 먼저 확인하고 `--confirm`으로 전송합니다. 플랫폼별 공개 상태 제약을 유지하며 불확실한 전송을 자동 재시도하지 않습니다. 개별 어댑터의 비공개·초안 실검증과 공통 명령의 모의 검사를 구분합니다.
 
@@ -80,7 +80,7 @@ All selected targets pass offline capability checks before sequential sends. Res
 - [x] Installation/login/FAQ guides and clean-package installation checks
 - [x] Public publishing and desktop image-link checks on Velog/Tistory/Blogger
 - [x] Node22/24 offline CI on macOS/Linux/Windows
-- [x] First GitHub release package prepared as v0.1.0
+- [x] v0.1.0 published as an experimental GitHub prerelease
 - [ ] npm registry distribution under an owned package name
 
 Platform support is a goal, not a claim that every platform currently exposes a suitable public API. Document limitations before implementing a connector.

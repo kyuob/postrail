@@ -2,15 +2,20 @@ import { fail } from "./core.js";
 import { digest, journalPath, readJournal, saveJournal, locked } from "./velog-journal.js";
 import { velogAccount, withVelogSession } from "./velog-client.js";
 import { velogImages, replaceVelogImages } from "./velog-images.js";
-import { equivalentTags } from './tags.js';
+import { equivalentTags, distinctTagIdentities } from './tags.js';
 
 function flags(article) { return { is_temp: article.meta.visibility === "draft", is_private: article.meta.visibility !== "public" }; }
 function validateUser(user, account) {
   if (!user || user.username !== account || typeof user.id !== "string" || !user.id) fail("VELOG_ACCOUNT_MISMATCH", "The session does not match the requested Velog author.");
 }
-function validatePost(post, user) {
+function validatePostIdentity(post, user, expectedId) {
   if (!post || typeof post.id !== "string" || !/^[A-Za-z0-9_-]{1,200}$/.test(post.id) || post.user?.id !== user.id || post.user?.username !== user.username
-    || typeof post.title !== "string" || typeof post.body !== "string" || !Array.isArray(post.tags) || post.tags.some(t => typeof t !== "string")
+    || expectedId && post.id !== expectedId) fail("VELOG_RESPONSE_INVALID", "Velog did not confirm the expected owned post identity.");
+  return post;
+}
+function validatePost(post, user) {
+  validatePostIdentity(post, user);
+  if (typeof post.title !== "string" || typeof post.body !== "string" || !Array.isArray(post.tags) || post.tags.some(t => typeof t !== "string")
     || typeof post.is_temp !== "boolean" || typeof post.is_private !== "boolean" || typeof post.url_slug !== "string" || !post.url_slug || post.url_slug.length > 1000) fail("VELOG_RESPONSE_INVALID", "Velog did not confirm an owned post with the expected fields.");
   return post;
 }
@@ -19,8 +24,12 @@ function remoteHash(post) {
     slug: post.url_slug, thumbnail: post.thumbnail ?? null, summary: post.short_description ?? "", series: post.series?.id ?? null });
 }
 function identity(post, account) { return { postId: post.id, url: `https://velog.io/@${account}/${encodeURIComponent(post.url_slug)}` }; }
+function checkTags(article) {
+  if (!distinctTagIdentities(article.meta.tags)) fail('VELOG_TAG_COLLISION', 'Tags must remain distinct ignoring ASCII letter casing. Review tags such as CLI and cli before sending.');
+}
 
 export function checkVelog(article) {
+  checkTags(article);
   const images = velogImages(article);
   return { ok: true, command: "velog check", offline: true, articleId: article.meta.id, visibility: article.meta.visibility, ...flags(article), localImages: new Set(images.map(i => i.source)).size, liveVerified: false };
 }
@@ -49,6 +58,7 @@ export async function getVelog(article, account, cwd, session = withVelogSession
 export async function pushVelog(article, account, cwd, confirmed, session = withVelogSession) {
   velogAccount(account);
   if (!confirmed) fail("VELOG_CONFIRM_REQUIRED", "Review the article, author and visibility, then pass --confirm to send it to Velog.");
+  checkTags(article);
   const references = velogImages(article);
   const file = journalPath(cwd, account, article.meta.id, true);
   return locked(file, async () => {
@@ -77,10 +87,14 @@ export async function pushVelog(article, account, cwd, confirmed, session = with
         const body = replaceVelogImages(article, references, urls);
         const input = { title: article.meta.title, body, tags: article.meta.tags, is_markdown: true, ...flags(article), url_slug: current?.url_slug ?? `${article.meta.id}-${digest([account, article.meta.id]).slice(0, 8)}`,
           thumbnail: current?.thumbnail ?? null, meta: { short_description: current?.short_description ?? "" }, series_id: current?.series?.id ?? null, token: null, ...(old?.postId ? { id: old.postId } : {}) };
-        const saved = validatePost(await client.write(input, !!old), user);
-        if (old?.postId && saved.id !== old.postId) fail("VELOG_RESPONSE_INVALID", "Velog returned a different saved post ID.");
-        state.postId = saved.id;
-        saveJournal(file, state); // Retain identity even if readback fails next.
+        const retainIdentity = candidate => {
+          validatePostIdentity(candidate, user, old?.postId);
+          state.postId = candidate.id;
+          saveJournal(file, state); // Identity can survive incomplete content or GraphQL field errors.
+        };
+        const response = await client.write(input, !!old, retainIdentity);
+        retainIdentity(response);
+        const saved = validatePost(response, user);
         const actual = validatePost(await client.read(saved.id), user);
         const intended = { ...saved, title: input.title, body, tags: input.tags, ...flags(article),
           ...(current ? { url_slug: input.url_slug, thumbnail: input.thumbnail, short_description: input.meta.short_description,

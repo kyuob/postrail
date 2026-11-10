@@ -39,4 +39,5 @@ assert.deepEqual(workflow.jobs['offline-matrix'].strategy.matrix.node, [22, 24])
 assert.deepEqual(workflow.jobs['package-and-docs'].strategy.matrix.node, [22, 24]);
 assert(!workflowText.includes('secrets.'), 'Offline CI must not depend on account secrets.');
 for (const job of Object.values(workflow.jobs)) for (const step of job.steps) if (step.uses) assert(/@[a-f0-9]{40}$/.test(step.uses), 'Actions must be pinned to reviewed commits.');
-console.log(`PASS docs: ${files.length} nonempty documents, ${links} local links, example validation and documented offline publish. No login or write performed.`);
+await import('./onboarding-smoke.mjs');
+console.log(`PASS docs: ${files.length} nonempty documents, ${links} local links, example validation and documented offline publish. No login or remote write performed.`);

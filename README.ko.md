@@ -2,7 +2,7 @@
 
 Markdown 하나를 Velog·Tistory·KeyFlow·Google Blogger로 보내는 오픈소스 CLI입니다.
 
-**v0.1.0 실험적 CLI입니다.** 벨로그·티스토리 한국어 글과 블로거 영문 글의 실제 공개 발행, 같은ID 수정·재조회, 데스크톱 이미지 표시·클릭을 확인했습니다. Node22/24의 macOS·Linux·Windows 오프라인CI도 통과했습니다. 모든OS의 실제 로그인이나 미지원 기능까지 검증한 것은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](docs/stage7-status.md)을 확인해 주세요.
+**v0.1.0은 공개된 실험적 GitHub 사전 릴리스입니다.** 지정 원고 검수에서는 벨로그·티스토리 한국어 글과 블로거 영문 글의 공개 발행, 같은ID 수정·재조회, 데스크톱 이미지 표시·클릭을 확인했습니다. 이는 당시 검수 증거이며 현재 게시 언어나 내용을 보장하는 설명은 아닙니다. Node22/24의 macOS·Linux·Windows 오프라인CI도 통과했습니다. 모든OS의 실제 로그인이나 미지원 기능까지 검증한 것은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](docs/stage7-status.md)을 확인해 주세요.
 
 [English README](README.md) · [설치](docs/installation.md) · [로그인](docs/login.md) · [FAQ](docs/faq.md)
 
@@ -44,7 +44,7 @@ node dist/cli.js publish ./article.md --to velog,blogger \
   --destinations ./my-destinations.json --confirm --json
 ```
 
-Tistory 임시저장, Blogger 개별 private 글·로컬 이미지 업로드는 미지원입니다. 서로 다른 비공개 상태를 자동 변환하지 않습니다. 모든 사전 검사가 통과한 뒤 순서대로 전송하며 일부 실패해도 성공 결과를 유지합니다. 불확실한 전송·원격 충돌은 자동 재시도하지 않습니다. KeyFlow의 원격 수동 수정 충돌 검출은 미구현이므로 해당 플랫폼 업데이트 전에는 원격 내용을 직접 확인해야 합니다.
+Tistory 임시저장, Blogger 개별 private 글·로컬 이미지 업로드는 미지원입니다. 서로 다른 비공개 상태를 자동 변환하지 않습니다. 모든 사전 검사가 통과한 뒤 순서대로 전송하며 일부 실패해도 성공 결과를 유지합니다. 불확실한 전송은 자동 재시도하지 않습니다. Velog/Tistory/Blogger는 수정 전 원격 변경을 검사하지만, 읽기 이후 쓰기까지 발생한 동시 편집을 원자적으로 막지는 못합니다. KeyFlow의 원격 수동 수정 충돌 검출은 미구현이므로 해당 플랫폼 업데이트 전에는 원격 내용을 직접 확인해야 합니다.
 
 ## 문서와 참여
 

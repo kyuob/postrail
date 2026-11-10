@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — v0.1.1 stability work
+
+- Reject ASCII-case-colliding tags in Velog/Tistory offline checks and direct pushes before authentication, uploads or journal creation.
+- Retain verified owned Velog post identities from incomplete mutation responses, including partial GraphQL errors; retain unknown status and block retries. Reject foreign owners and changed update IDs.
+- Add sanitized local-state, saved-ID and next-action hints to common failed results without converting them to success or issuing remote requests. Accept valid Velog IDs beginning with `_` or `-` in common results.
+- Make beginner onboarding self-contained and verify the exact documented offline flow in empty consumers. Align prerelease and remote-conflict documentation with actual limits.
+- Scoped publishing regressions:193 passing. These changes are local and unreleased; package version remains0.1.0. No additional KeyFlow-specific checks or live publishing were performed.
+
 ## 0.1.0 — 2026-11-10
 
 First experimental GitHub release, distributed as `kyuob-postrail-0.1.0.tgz` with SHA256 checksums. The package name is `@kyuob/postrail` and the command is `postrail`. npm publication is not part of this release; `private: true` prevents accidental registry publication. The unscoped npm name belongs to a different project.

@@ -24,9 +24,21 @@ All capability checks finish before any selected target is sent. A missing desti
 
 With confirmation, targets run in the selected order. JSON contains one result per target: `succeeded`, `skipped`, or `failed`. A failure has a sanitized `error.code` and `automaticRetry: false`; arbitrary server error text is withheld. Exit status is 1 if preflight is blocked or any target fails, and 0 if all selected targets succeed or skip unchanged content.
 
+The unreleased stability changes add local recovery hints to a failed result without changing `status: "failed"`, `error.code` or `automaticRetry: false`. They are not part of the published v0.1.0 tarball:
+
+| Added field | Meaning |
+| --- | --- |
+| `localStatus` | A local journal snapshot: `unknown`, `pending`, `succeeded`, `not_submitted`, or `unavailable` |
+| `postId` (optional) | An ID retained in the validated local journal; its presence does not prove that this invocation succeeded remotely |
+| `nextAction` | `inspect_remote` for unknown/pending/succeeded local state; `review_inputs` for not_submitted; `inspect_local_state` when local state cannot be read or no reader exists |
+
+These hints add no remote calls, automatic retry or reconciliation. A local `succeeded` snapshot can describe an earlier saved operation while the current invocation failed. `nextAction` is guidance, not a new CLI recovery command. KeyFlow has no added common-result state reader, so its common failures report `unavailable`; use the existing platform status and management-screen guidance.
+
 Success on one target is retained when another fails. The command does not roll back, delete, log in again, retry a write or try another mutation schema. Each adapter keeps its existing account/blog/article journal and remote ID. Velog/Tistory/Blogger check remote content before skipping unchanged input and stop on detected remote edits. KeyFlow skips from its local hash and does not detect remote manual edits; updates can overwrite them, and remote `get` is unavailable. An unknown write stays blocked until the remote result is reconciled. Inspect platform `status` and supported `get` commands or the service's own management screen, then retry only resolved targets with `--to`. A user-deleted remote article is not silently recreated.
 
 Common invocations lock the article ID inside `.postrail/publish/` for their entire execution. Per-platform locks still protect individual writes, including direct platform commands. A crashed common invocation leaves its lock in place. Stop any active process and inspect every affected journal before manually removing an abandoned lock; the CLI never assumes an old lock is safe to remove. This is duplicate prevention, not an exactly-once guarantee.
+
+Remote checks and local locks are separate protections. Velog/Tistory read the remote fingerprint before writing; another browser or process can still edit the article between that read and the write. Blogger also checks remote content, but this CLI does not promise an atomic compare-and-write across those steps. Avoid concurrent remote editing during publication. KeyFlow has no remote conflict check.
 
 ## 한국어 요약
 
