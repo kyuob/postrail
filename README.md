@@ -4,7 +4,7 @@ Write once. Publish across your blogs.
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
 
-> **Status: offline CLI + KeyFlow + experimental Velog/Tistory/Blogger adapters.** KeyFlow is accepted by the user; additional acceptance testing is closed. The other adapters are fixture-tested with bundled live account validation pending. Tistory draft slots, Blogger private posts and Blogger local image uploads are unsupported. No package has been released to a registry.
+> **Status: offline CLI, per-platform adapters and experimental common publishing.** KeyFlow acceptance is closed. Velog/Tistory/Blogger passed scoped draft/private creation, same-ID update, readback and unchanged-skip checks. Common multi-target orchestration is mock-tested; combined live flow, public publishing and visual rendering remain unverified. Tistory draft slots and Blogger private/local images are unsupported. No registry package has been released.
 
 ## Development
 
@@ -35,7 +35,7 @@ All four commands support `--json`. See the [offline CLI guide](docs/offline-cli
 
 `node dist/cli.js keyflow check examples/article.md --json` runs the pinned official CLI's actual offline dry-run. Explicit `keyflow login`, `keyflow push --account <name> --confirm`, and local `keyflow status` commands are also implemented. Uploads preserve the source article, keep a local post ID journal, and block automatic retry after an uncertain result. See the [KeyFlow guide](docs/keyflow.md) before using commands that authenticate or send content.
 
-See [live acceptance results and limits](docs/live-validation.md) for the scoped test facts. Per the user's decision, additional KeyFlow verification is not a remaining project gate. This acceptance does not invent tests for other features; the multi-platform publish command is still unimplemented.
+See [live acceptance results and limits](docs/live-validation.md) for the scoped test facts. Additional KeyFlow verification is closed. The common publish command reuses the existing adapter without adding KeyFlow-specific verification.
 
 ## Experimental Google Blogger adapter
 
@@ -47,29 +47,32 @@ Run `node dist/cli.js velog check examples/velog.md --json` offline. Explicit `v
 
 ## Experimental Tistory adapter
 
-`node dist/cli.js tistory check examples/tistory.md --json` runs offline. Explicit `tistory login --blog NAME --blog-id ID` opens a dedicated Chrome profile. `tistory push ARTICLE --blog NAME --blog-id ID --confirm` creates or updates a saved post ID using Tistory's internal management interface. Markdown is rendered to HTML; uploads register platform attachment references. Draft input is rejected rather than converted to a private post. Read the [Tistory guide](docs/tistory.md) for exact commands, experimental schema limits and recovery. `bun run check:tistory` checks core, Velog and Tistory fixtures without account access. See the [bundled live validation plan](docs/bundled-validation.md) for the deferred account stage.
+`node dist/cli.js tistory check examples/tistory.md --json` runs offline. Explicit `tistory login --blog NAME --blog-id ID` opens ordinary Chrome in its dedicated profile on macOS. After login, quit that Chrome app to verify the saved blog session. `tistory push ARTICLE --blog NAME --blog-id ID --confirm` creates or updates a saved post ID using Tistory's internal management interface. Markdown is rendered to HTML; uploads register platform attachment references. Draft input is rejected rather than converted to a private post. Read the [Tistory guide](docs/tistory.md) for commands and recovery, and [actual validation results](docs/bundled-validation-results.md) for verified scope. `bun run check:tistory` checks fixtures without account access.
 
-## Planned interface
+## Common publishing
 
-The following is a design proposal, **not an available command**:
+Prepare a nonsecret destination mapping from [the example](examples/destinations.json), then review offline before sending:
 
 ```sh
-postrail publish article.md --to velog,tistory,keyflow,blogger
+node dist/cli.js publish article.md --to velog,blogger --destinations my-destinations.json --dry-run --json
+node dist/cli.js publish article.md --to velog,blogger --destinations my-destinations.json --confirm --json
 ```
 
-마크다운 하나로 여러 블로그에 발행하는 CLI입니다. KeyFlow는 사용자 확정으로 추가 검증을 종료했습니다. 벨로그·티스토리·블로거의 실험적 어댑터와 모의 응답 검사를 마련했으며, 다음은 묶음 실계정 검증입니다. 티스토리 임시저장, 블로거 개별 비공개 글·로컬 이미지 업로드와 공통 다중 발행은 미지원입니다.
+All selected targets pass offline capability checks before sequential sends. Results preserve partial success; per-platform journals block unresolved writes and remote conflicts. Read the [publish guide](docs/publish.md) for visibility compatibility, recovery and concurrency locks. `bun run check:publish` verifies common orchestration and the core/experimental adapters without real accounts or additional KeyFlow-specific tests.
+
+마크다운 하나를 여러 블로그로 전송하는 공통 명령을 제공합니다. `--dry-run`으로 먼저 확인하고 `--confirm`으로 전송합니다. 플랫폼별 공개 상태 제약을 유지하며 불확실한 전송을 자동 재시도하지 않습니다. 개별 어댑터의 비공개·초안 실검증과 공통 명령의 모의 검사를 구분합니다.
 
 ## Roadmap
 
 - [x] Standalone CLI scaffold and GitHub CI
 - [x] Inspect two publishing references per platform for Velog and Tistory
-- [ ] Confirm each platform's supported publishing and authentication methods
+- [x] Record each platform's supported interfaces and authentication limits
 - [x] Define Markdown input and article metadata
-- [ ] Implement per-platform adapters with explicit capability reporting
+- [x] Experimental per-platform adapters and explicit capability reporting
 - [x] KeyFlow adapter accepted by the user; additional acceptance testing closed
-- [x] Experimental Blogger Desktop OAuth and official API adapter (live validation pending)
+- [x] Scoped real-account draft/private validation for Velog, Tistory and Blogger
 - [x] Offline preview and publishing plan with explicit adapter status
-- [ ] Track publication results to support updates without duplicate posts
+- [x] Track remote IDs, same-post updates, partial results and uncertain writes
 - [ ] Document installation and publish the first usable release
 
 Platform support is a goal, not a claim that every platform currently exposes a suitable public API. Document limitations before implementing a connector.

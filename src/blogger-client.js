@@ -46,8 +46,13 @@ export class BloggerClient {
   }
   async blogs() {
     const result = await this.send('/users/self/blogs?role=ADMIN&fetchUserInfo=true&status=LIVE');
-    if (!Array.isArray(result.items ?? [])) fail('BLOGGER_RESPONSE_INVALID', 'Google returned an unsupported blog list.');
-    return (result.items ?? []).map(blog => { if (typeof blog.id !== 'string' || !/^[0-9]{1,30}$/.test(blog.id) || typeof blog.name !== 'string') fail('BLOGGER_RESPONSE_INVALID', 'Google returned an unsupported blog identity.'); return { blogId: blog.id, name: blog.name }; });
+    if (result.items !== undefined && !Array.isArray(result.items) || result.blogUserInfos !== undefined && !Array.isArray(result.blogUserInfos)) fail('BLOGGER_RESPONSE_INVALID', 'Google returned an unsupported blog list.');
+    const blogs = result.blogUserInfos !== undefined ? result.blogUserInfos.map(info => {
+      if (!info || typeof info !== 'object' || !info.blog) fail('BLOGGER_RESPONSE_INVALID', 'Google returned an unsupported blog membership.');
+      if (info.blog_user_info?.role !== 'ADMIN' || info.blog_user_info.blogId !== info.blog?.id) fail('BLOGGER_BLOG_MISMATCH', 'Google did not confirm ADMIN membership for a listed blog.');
+      return info.blog;
+    }) : result.items ?? [];
+    return blogs.map(blog => { if (typeof blog?.id !== 'string' || !/^[0-9]{1,30}$/.test(blog.id) || typeof blog.name !== 'string') fail('BLOGGER_RESPONSE_INVALID', 'Google returned an unsupported blog identity.'); return { blogId: blog.id, name: blog.name }; });
   }
   async target(blogId, userId) {
     numericId(blogId);

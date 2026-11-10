@@ -6,6 +6,8 @@ import { keyflowCommand } from "./keyflow-command.js";
 import { velogCommand } from "./velog-command.js";
 import { tistoryCommand } from "./tistory-command.js";
 import { bloggerCommand } from "./blogger-command.js";
+import { publishCommand } from "./publish-command.js";
+import { publishCapabilities } from "./publish.js";
 
 const { version } = JSON.parse(
   readFileSync(new URL("../package.json", import.meta.url), "utf8"),
@@ -15,6 +17,7 @@ const json = args.includes("--json");
 const help = `Postrail — write once, publish across your blogs.
 
 Usage:
+  postrail publish <article.md> --destinations <file> [--to velog,tistory,keyflow,blogger] [--dry-run | --confirm] [--config <file>] [--json]
   postrail init [--json]
   postrail validate <article.md> [--config <file>] [--json]
   postrail preview <article.md> [--output <new.html>] [--config <file>] [--json]
@@ -24,7 +27,7 @@ Usage:
   postrail keyflow status <article.md> --account <name> [--json]
   postrail keyflow push <article.md> --account <name> --confirm [--json]
   postrail velog check <article.md> [--config <file>] [--json]
-  postrail velog login --account <username>
+  postrail velog login --account <username> [--diagnostics]
   postrail velog status <article.md> --account <username> [--json]
   postrail velog get <article.md> --account <username> [--json]
   postrail velog push <article.md> --account <username> --confirm [--json]
@@ -46,17 +49,17 @@ init/validate/preview/plan and platform check/status are offline.
 KeyFlow login opens a browser; keyflow push sends content after --confirm.
 Preview prints HTML unless --output is given.
 Existing files are never overwritten. --json returns structured results/errors.
-Multi-platform publishing is not available yet. KeyFlow uses its official CLI.
-Velog integration is experimental; live account validation is pending.
-Tistory is experimental (private/public only); live validation is pending.
-Blogger uses Desktop OAuth; live validation is pending. Private/local images are unsupported.
-Use per-platform subcommands; generic multi-platform publish is not implemented.`;
+publish --dry-run checks all selected targets offline; --confirm sends sequentially.
+Partial results are preserved. Uncertain writes are never automatically retried.
+Velog/Tistory/Blogger remain experimental; scoped draft/private account tests passed.
+Tistory draft slots and Blogger private/local images are unsupported.
+Generic publish orchestration is mock-tested; its combined live flow is unverified.`;
 
 function parse() {
   if (!args.length || args.length === 1 && ["--help", "-h", "help"].includes(args[0])) return { command: "help" };
   if (args.length === 1 && ["--version", "-v"].includes(args[0])) return { command: "version" };
   const [command, ...rest] = args;
-  if (!["init", "validate", "preview", "plan"].includes(command)) fail("UNSUPPORTED_COMMAND", "Unsupported command or arguments. Publishing is not implemented yet. Run postrail --help.");
+  if (!["init", "validate", "preview", "plan"].includes(command)) fail("UNSUPPORTED_COMMAND", "Unsupported command or arguments. Run postrail --help for supported commands.");
   const allowed = command === "init" ? ["--json"] : ["--json", "--config", ...(command === "preview" ? ["--output"] : []), ...(command === "plan" ? ["--to"] : [])];
   const options = {};
   let file;
@@ -78,11 +81,23 @@ function parse() {
 }
 
 async function main() {
+  if (args[0] === 'publish') {
+    const result = await publishCommand(args.slice(1));
+    if (json) console.log(JSON.stringify(result));
+    else if (result.offline) {
+      console.log('Offline publish preflight:');
+      for (const target of result.preflight) console.log(`  ${target.platform}: ${target.visibility}; ${target.blockers.length ? target.blockers.join(', ') : 'ready for explicit confirmation'}`);
+    } else {
+      for (const target of result.results) console.log(`  ${target.platform}: ${target.status}${target.postId ? ` (${target.postId})` : ` — ${target.error.code}; inspect platform status before retrying`}`);
+    }
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
   if (args[0] === "blogger") {
     const result = await bloggerCommand(args.slice(1));
     if (json) console.log(JSON.stringify(result));
     else if (result.command === "blogger status") console.log(`Local Blogger state: ${result.state.status}`);
-    else if (result.command === "blogger check") console.log(result.canPush ? "Blogger check: passed; live validation pending." : `Blogger check: ${result.blockers.join(", ")}`);
+    else if (result.command === "blogger check") console.log(result.canPush ? "Blogger offline check: passed." : `Blogger check: ${result.blockers.join(", ")}`);
     else if (result.command === "blogger blogs") for (const blog of result.blogs) console.log(`${blog.blogId}: ${blog.name}`);
     else if (result.command === "blogger push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Blogger ${result.visibility}: ${result.postId}`);
     else if (result.command === "blogger get") console.log(`Blogger ${result.visibility}: ${result.postId}; matches last saved: ${result.matchesLastSaved}`);
@@ -93,7 +108,7 @@ async function main() {
     const result = await tistoryCommand(args.slice(1));
     if (json) console.log(JSON.stringify(result));
     else if (result.command === "tistory status") console.log(`Local Tistory state: ${result.state.status}`);
-    else if (result.command === "tistory check") console.log(result.canPush ? "Tistory check: passed; live validation pending." : `Tistory check: ${result.blockers.join(", ")}`);
+    else if (result.command === "tistory check") console.log(result.canPush ? "Tistory offline check: passed." : `Tistory check: ${result.blockers.join(", ")}`);
     else if (result.command === "tistory push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Tistory ${result.visibility}: ${result.postId}\n${result.url}`);
     else if (result.command === "tistory get") console.log(`Tistory ${result.visibility}: ${result.postId}; matches last saved: ${result.matchesLastSaved}`);
     else console.log(`${result.command}: complete.`);
@@ -137,7 +152,7 @@ async function main() {
     }
     if (command === "plan") {
       result.ready = false;
-      result.targets = article.meta.targets.map(platform => ({ platform, visibility: article.meta.visibility, status: platform === "keyflow" ? "implemented" : "unverified", canPublish: false, blockers: platform === "keyflow" ? ["USE_KEYFLOW_SUBCOMMAND"] : platform === "velog" ? ["LIVE_NOT_VERIFIED", "USE_VELOG_SUBCOMMAND"] : platform === "tistory" ? ["LIVE_NOT_VERIFIED", "USE_TISTORY_SUBCOMMAND", ...(article.meta.visibility === "draft" ? ["TISTORY_DRAFT_UNSUPPORTED"] : [])] : ["LIVE_NOT_VERIFIED", "USE_BLOGGER_SUBCOMMAND", ...(article.meta.visibility === "private" ? ["BLOGGER_PRIVATE_UNSUPPORTED"] : []), ...([...article.images.values()].some(i => i.kind === "local") ? ["BLOGGER_LOCAL_IMAGE_UNSUPPORTED"] : [])] }));
+      result.targets = publishCapabilities(article);
     }
   }
   if (json) console.log(JSON.stringify(result));
@@ -145,9 +160,7 @@ async function main() {
   else {
     console.log(`${command === "validate" ? "Valid" : command === "preview" ? "Preview saved" : "Offline plan"}: ${result.article.title}`);
     if (result.output) console.log(result.output);
-    if (result.targets) for (const target of result.targets) console.log(target.platform === "keyflow"
-      ? `  keyflow: ${target.visibility}, implemented — use postrail keyflow push`
-      : `  ${target.platform}: ${target.visibility}, unverified — publishing unavailable`);
+    if (result.targets) for (const target of result.targets) console.log(`  ${target.platform}: ${target.visibility}, ${target.status} — ${target.blockers.join(', ')}`);
     for (const warning of result.article.warnings) console.log(`Warning: ${warning}`);
   }
 }

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "destinations": {
+    "velog": { "account": "YOUR_VELOG_USERNAME" },
+    "tistory": { "blog": "your-blog", "blogId": "12345" },
+    "keyflow": { "account": "your-keyflow-account" },
+    "blogger": { "account": "your-blogger-account", "blogId": "12345" }
+  }
+}

@@ -3,6 +3,7 @@ import { realpathSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fail } from "./core.js";
 import { digest, privateDirectory } from "./velog-journal.js";
+import { manualChromeLogin } from "./manual-chrome-login.js";
 
 export const VELOG_GRAPHQL = "https://v3.velog.io/graphql";
 export const VELOG_UPLOAD = "https://v3.velog.io/api/files/v3/upload";
@@ -63,31 +64,34 @@ export class VelogClient {
     return url.href;
   }
 }
-export async function withVelogSession(account, action, { login = false } = {}) {
+export function authDiagnostic(rawUrl, status) {
+  let url; try { url = new URL(rawUrl); } catch { return undefined; }
+  if (url.protocol !== 'https:' || url.username || url.password) return undefined;
+  let route;
+  if (url.origin === 'https://velog.io' && url.pathname === '/email-login') route = 'email-link';
+  if (url.origin === 'https://v2.velog.io' && /^\/api\/v2\/auth\/code\/[^/]+$/.test(url.pathname)) route = 'email-exchange';
+  if (!route) return undefined;
+  return { route, status: Number.isInteger(status) && status >= 100 && status <= 599 ? status : 'network-failed' };
+}
+export async function withVelogSession(account, action, { login = false, diagnostics = false } = {}) {
   velogAccount(account);
   const directory = profilePath(account, login);
+  if (login) {
+    console.error('일반 Chrome의 Postrail 전용 프로필에서 로그인한 뒤, 해당 Chrome 앱을 ⌘Q로 종료해 주세요. 종료 후 저장된 계정을 확인합니다.');
+    await manualChromeLogin(directory);
+    if (diagnostics) console.error('Velog auth diagnostic: manual-browser-exited');
+  }
   let context;
   try {
     // Keep Playwright external to the Bun bundle; it locates its runtime assets itself.
     const { chromium } = await import("playwright-core");
-    context = await chromium.launchPersistentContext(directory, { channel: "chrome", headless: !login, timeout: 30_000, acceptDownloads: false });
+    context = await chromium.launchPersistentContext(directory, { channel: "chrome", chromiumSandbox: true, headless: true, timeout: 30_000, acceptDownloads: false,
+      // Use Chrome's normal OS-backed storage for the manually authenticated
+      // dedicated profile; never read or export its credential database.
+      ignoreDefaultArgs: ['--use-mock-keychain', '--password-store=basic'] });
   } catch { fail("VELOG_BROWSER_FAILED", "Cannot open the dedicated Postrail Chrome profile. Install Google Chrome and close another Postrail session using this account."); }
   try {
     const client = new VelogClient(context.request);
-    if (login) {
-      const page = await context.newPage();
-      await page.goto("https://velog.io/", { timeout: 30_000 });
-      const deadline = Date.now() + 180_000;
-      while (Date.now() < deadline) {
-        const user = await client.currentUser();
-        if (user) {
-          if (user.username !== account || typeof user.id !== "string" || !user.id) fail("VELOG_ACCOUNT_MISMATCH", "This browser is signed into a different Velog username. Use the requested account in the dedicated profile.");
-          return await action(client, user);
-        }
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-      fail("VELOG_LOGIN_TIMEOUT", "Velog login timed out. No post was sent.");
-    }
     const user = await client.currentUser();
     if (!user) fail("VELOG_LOGIN_REQUIRED", "Sign in using postrail velog login first.");
     if (user.username !== account || typeof user.id !== "string" || !user.id) fail("VELOG_ACCOUNT_MISMATCH", "The saved profile does not match the requested Velog account.");

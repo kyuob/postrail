@@ -29,9 +29,9 @@ export function statusVelog(article, account, cwd) {
   return { ok: true, command: "velog status", offline: true, articleId: article.meta.id, account,
     state: state ? { status: state.status, postId: state.postId, contentHash: state.contentHash } : { status: "not_submitted" } };
 }
-export async function loginVelog(account, session = withVelogSession) {
+export async function loginVelog(account, session = withVelogSession, { diagnostics = false } = {}) {
   velogAccount(account);
-  return session(account, async (_client, user) => { validateUser(user, account); return { ok: true, command: "velog login", account, liveVerified: false }; }, { login: true });
+  return session(account, async (_client, user) => { validateUser(user, account); return { ok: true, command: "velog login", account, liveVerified: false }; }, { login: true, ...(diagnostics ? { diagnostics: true } : {}) });
 }
 export async function getVelog(article, account, cwd, session = withVelogSession) {
   velogAccount(account);

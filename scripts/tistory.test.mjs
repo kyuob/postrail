@@ -10,6 +10,25 @@ import { tistoryTarget, TistoryClient } from '../src/tistory-client.js';
 import { checkTistory, pushTistory, statusTistory, loginTistory, getTistory } from '../src/tistory.js';
 import { editorConfig, verifyBlog, postFromConfig, attachment, renderTistory, canonicalHtml } from '../src/tistory-format.js';
 import { journalPath, readJournal, locked } from '../src/tistory-storage.js';
+import { manualChromeLogin } from '../src/manual-chrome-login.js';
+import { EventEmitter } from 'node:events';
+
+test('manual Tistory login opens only the canonical manager and waits for user exit', async () => {
+  const browser = new EventEmitter(); let finished = false;
+  const waiting = manualChromeLogin('/private/test-profile', { service: 'tistory', destination: 'https://test-blog.tistory.com/manage', platform: 'darwin', spawnImpl: (_binary, args, options) => {
+    assert.deepEqual(args, ['--user-data-dir=/private/test-profile', '--no-first-run', '--no-default-browser-check', '--restore-last-session', 'https://test-blog.tistory.com/manage']);
+    assert.equal(options.shell, false); assert.equal(options.stdio, 'ignore'); return browser;
+  } }).then(() => { finished = true; });
+  await Promise.resolve(); assert.equal(finished, false); browser.emit('close', 0); await waiting;
+  assert.equal(finished, true);
+});
+test('manual Tistory login rejects destination substitution and unsupported systems before spawn', async () => {
+  const spawnImpl = () => { assert.fail('must not launch'); };
+  for (const destination of ['https://evil.test/manage', 'https://test-blog.tistory.com/manage?token=SECRET', 'https://test-blog.tistory.com.evil.test/manage']) {
+    await assert.rejects(() => manualChromeLogin('/profile', { service: 'tistory', destination, platform: 'darwin', spawnImpl }), e => e.code === 'TISTORY_REQUEST_INVALID' && !e.message.includes('SECRET'));
+  }
+  await assert.rejects(() => manualChromeLogin('/profile', { service: 'tistory', destination: 'https://test-blog.tistory.com/manage', platform: 'linux', spawnImpl }), e => e.code === 'TISTORY_LOGIN_UNSUPPORTED');
+});
 
 const target = tistoryTarget('test-blog', '12345');
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/a9sAAAAASUVORK5CYII=', 'base64');
@@ -129,12 +148,28 @@ test('configuration parser handles literal braces, comments and single quotes wi
     '<p>window.Config = {};</p>',
   ]) assert.throws(() => editorConfig(text), { code: 'TISTORY_SCHEMA_UNSUPPORTED' });
 });
+test('current Config.post readback preserves raw fields and normalizes numeric options', () => {
+  const entry = { id: '101', title: 'test', content: '<p>body</p>', visibility: 0, category: '0', tags: ['tag'], slogan: 'test', uselessMargin: '1', cclCommercial: '0', cclDerive: '0' };
+  const c = { ...config(), post: entry };
+  const post = postFromConfig(c, target, '101');
+  assert.equal(post.category, 0); assert.equal(post.editor, entry);
+  assert.deepEqual(post.editorOptions, { uselessMarginForEntry: 1, cclCommercial: 0, cclDerive: 0 });
+  assert.throws(() => postFromConfig({ ...c, entry }, target, '101'), { code: 'TISTORY_SCHEMA_UNSUPPORTED' });
+  assert.throws(() => postFromConfig({ ...c, post: { ...entry, uselessMargin: 'bad' } }, target, '101'), { code: 'TISTORY_SCHEMA_UNSUPPORTED' });
+  assert.throws(() => postFromConfig({ ...c, post: { ...entry, category: null } }, target, '101'), { code: 'TISTORY_SCHEMA_UNSUPPORTED' });
+});
 test('editor readback rejects wrong blog, missing/other IDs and protected posts', () => {
   assert.throws(() => verifyBlog({ blog: { domain: 'other.tistory.com', blogSettings: { blogId: '12345' } } }, target), { code: 'TISTORY_BLOG_MISMATCH' });
   assert.throws(() => postFromConfig(config({ id: '999' }), target, '101'), { code: 'TISTORY_SCHEMA_UNSUPPORTED' });
   assert.throws(() => postFromConfig(config({ id: '101', title: 't', content: 'c', visibility: 15 }), target, '101'), { code: 'TISTORY_SCHEMA_UNSUPPORTED' });
 });
 test('canonical HTML accepts only documented cosmetic additions and retains meaningful changes', () => {
+  const image = dimensions => `<p>[##_Image|kage@dummy/image.png?test=1|CDM|1.3|${JSON.stringify(dimensions)}_##]</p>`;
+  const dimensions = { originWidth: 96, originHeight: 96, style: 'alignCenter' };
+  assert.equal(canonicalHtml(image(dimensions)), canonicalHtml(image({ ...dimensions, originWidth: '96', originHeight: '96' })));
+  assert.notEqual(canonicalHtml(image(dimensions)), canonicalHtml(image({ ...dimensions, originWidth: '97' })));
+  assert.notEqual(canonicalHtml(image(dimensions)), canonicalHtml(image({ ...dimensions, style: 'alignLeft' })));
+  assert.notEqual(canonicalHtml(image(dimensions)), canonicalHtml(image(dimensions).replace('dummy/image.png', 'other/image.png')));
   assert.equal(canonicalHtml('<h2>제목</h2><p>본문</p>'), canonicalHtml('<h2 id="tm-h-1">제목</h2><p data-ke-size="size16">본문</p>'));
   assert.notEqual(canonicalHtml('<a href="https://a.test">a</a>'), canonicalHtml('<a href="https://b.test">a</a>'));
   assert.notEqual(canonicalHtml('<p>본문</p>'), canonicalHtml('<p>다른 본문</p>'));
@@ -203,5 +238,5 @@ test('built CLI check/status/early guards are offline and leave home empty', t =
   }
   assert.deepEqual(readdirSync(home), []);
   const r = spawnSync(process.execPath, ['--require', guard, cli, 'plan', f.file, '--json'], { cwd: f.dir, env: { ...process.env, HOME: home }, encoding: 'utf8', timeout: 10000 });
-  assert.deepEqual(JSON.parse(r.stdout).targets[0].blockers, ['LIVE_NOT_VERIFIED', 'USE_TISTORY_SUBCOMMAND', 'TISTORY_DRAFT_UNSUPPORTED']);
+  assert.deepEqual(JSON.parse(r.stdout).targets[0].blockers, ['DESTINATIONS_REQUIRED', 'CONFIRM_REQUIRED', 'TISTORY_DRAFT_UNSUPPORTED']);
 });

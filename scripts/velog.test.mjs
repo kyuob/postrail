@@ -7,7 +7,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { loadArticle, loadConfig } from '../src/core.js';
 import { checkVelog, pushVelog, statusVelog, getVelog, loginVelog } from '../src/velog.js';
-import { VelogClient, VELOG_GRAPHQL, VELOG_UPLOAD } from '../src/velog-client.js';
+import { VelogClient, VELOG_GRAPHQL, VELOG_UPLOAD, authDiagnostic } from '../src/velog-client.js';
+import { manualChromeLogin } from '../src/manual-chrome-login.js';
+import { EventEmitter } from 'node:events';
 import { journalPath, readJournal, saveJournal, locked } from '../src/velog-journal.js';
 import { velogImages, replaceVelogImages } from '../src/velog-images.js';
 
@@ -144,6 +146,39 @@ test('login wrapper requires exact identity and passes explicit login mode', asy
   })).account, 'tester');
   await rejects(() => loginVelog('tester', async (_a, action) => action({}, { ...user, username: 'wrong' })), 'VELOG_ACCOUNT_MISMATCH');
 });
+test('manual login waits for ordinary Chrome exit with only the isolated profile and fixed URL', async () => {
+  const browser = new EventEmitter(); let finished = false;
+  const waiting = manualChromeLogin('/private/profile with spaces', { platform: 'darwin', spawnImpl: (binary, args, options) => {
+    assert.equal(binary, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome');
+    assert.deepEqual(args, ['--user-data-dir=/private/profile with spaces', '--no-first-run', '--no-default-browser-check', 'https://velog.io/']);
+    assert.deepEqual(options, { stdio: 'ignore', shell: false });
+    return browser;
+  } }).then(() => { finished = true; });
+  await Promise.resolve(); assert.equal(finished, false);
+  browser.emit('close', 0); await waiting; assert.equal(finished, true);
+});
+test('manual login rejects unsupported platforms and sanitizes process errors', async () => {
+  await rejects(() => manualChromeLogin('/profile', { platform: 'win32' }), 'VELOG_LOGIN_UNSUPPORTED');
+  for (const event of ['error', 'close']) {
+    await assert.rejects(() => manualChromeLogin('/profile', { platform: 'darwin', spawnImpl: () => {
+      const browser = new EventEmitter(); queueMicrotask(() => browser.emit(event, event === 'error' ? new Error('SECRET') : 1)); return browser;
+    } }), error => error.code === 'VELOG_BROWSER_FAILED' && !error.message.includes('SECRET'));
+  }
+});
+test('optional login diagnostics never contain URL, query code, fragment or raw status', () => {
+  const safe = authDiagnostic('https://velog.io/email-login?code=DUMMY_SECRET#DUMMY_FRAGMENT', 200);
+  assert.deepEqual(safe, { route: 'email-link', status: 200 });
+  const exchange = authDiagnostic('https://v2.velog.io/api/v2/auth/code/DUMMY_PATH_SECRET?email=DUMMY_EMAIL', 403);
+  assert.deepEqual(exchange, { route: 'email-exchange', status: 403 });
+  assert.doesNotMatch(JSON.stringify([safe, exchange]), /DUMMY_|https|code|email=/);
+  assert.deepEqual(authDiagnostic('https://v2.velog.io/api/v2/auth/code/DUMMY_PATH_SECRET', 'DUMMY_STATUS_SECRET'), { route: 'email-exchange', status: 'network-failed' });
+  assert.equal(authDiagnostic('https://velog.io.evil.test/email-login?code=DUMMY_SECRET', 200), undefined);
+  assert.equal(authDiagnostic('https://user:pass@velog.io/email-login', 200), undefined);
+  assert.equal(authDiagnostic('https://velog.io/@someone/posts', 200), undefined);
+});
+test('login wrapper passes diagnostics only when explicitly requested', async () => {
+  await loginVelog('tester', async (_a, action, options) => { assert.deepEqual(options, { login: true, diagnostics: true }); return action({}, user); }, { diagnostics: true });
+});
 function transport(value, status = 200) {
   const calls = []; let disposed = 0;
   const client = new VelogClient({ post: async (url, options) => {
@@ -189,5 +224,5 @@ test('built CLI offline commands and early guards never open browser or access n
   }
   const planned = spawnSync(process.execPath, ['--require', guard, cli, 'plan', f.file, '--to', 'velog', '--json'], { cwd: f.dir, env: { ...process.env, HOME: home }, encoding: 'utf8', timeout: 10000 });
   assert.equal(planned.status, 0, planned.stderr);
-  assert.deepEqual(JSON.parse(planned.stdout).targets[0].blockers, ['LIVE_NOT_VERIFIED', 'USE_VELOG_SUBCOMMAND']);
+  assert.deepEqual(JSON.parse(planned.stdout).targets[0].blockers, ['DESTINATIONS_REQUIRED', 'CONFIRM_REQUIRED']);
 });

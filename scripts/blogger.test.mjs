@@ -222,6 +222,24 @@ test('foreign endpoints and oversized Google responses are rejected', async () =
 test('blog list command returns only intended names/IDs, not credentials', async () => {
   const s = server(); assert.deepEqual((await blogsBlogger(account, s.session)).blogs, [{ blogId, name: 'Fixture blog' }]);
 });
+test('fetchUserInfo lists ADMIN blogs from blogUserInfos even when items is omitted', async () => {
+  const client = new BloggerClient('DUMMY_ACCESS', async () => response({ kind: 'blogger#blogList', blogUserInfos: [
+    { blog: { id: blogId, name: 'Fixture blog' }, blog_user_info: { blogId, userId: user.id, role: 'ADMIN' } },
+  ] }));
+  assert.deepEqual(await client.blogs(), [{ blogId, name: 'Fixture blog' }]);
+  const wrong = new BloggerClient('DUMMY_ACCESS', async () => response({ blogUserInfos: [
+    { blog: { id: blogId, name: 'Fixture blog' }, blog_user_info: { blogId, role: 'READER' } },
+  ] }));
+  await rejects(() => wrong.blogs(), 'BLOGGER_BLOG_MISMATCH');
+  for (const blogUserInfos of [null, [null]]) {
+    const invalid = new BloggerClient('DUMMY_ACCESS', async () => response({ blogUserInfos }));
+    await rejects(() => invalid.blogs(), 'BLOGGER_RESPONSE_INVALID');
+  }
+  const mismatch = new BloggerClient('DUMMY_ACCESS', async () => response({ blogUserInfos: [
+    { blog: { id: blogId, name: 'Fixture blog' }, blog_user_info: { blogId: '999', role: 'ADMIN' } },
+  ] }));
+  await rejects(() => mismatch.blogs(), 'BLOGGER_BLOG_MISMATCH');
+});
 test('built CLI offline commands and early guards cannot open network/browser', t => {
   const f = fixture(t); const guard = path.join(f.dir, 'guard.cjs'); writeFileSync(guard, `const deny=()=>{throw Error('NETWORK_FORBIDDEN')};global.fetch=deny;for(const n of ['http','https']){const m=require('node:'+n);m.request=deny;m.get=deny;}require('node:net').Socket.prototype.connect=deny;`);
   const initial = readdirSync(f.home);

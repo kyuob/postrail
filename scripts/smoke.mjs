@@ -21,7 +21,7 @@ for (const args of [[], ["--help"], ["-h"], ["help"]]) {
   const result = run(args);
   assert.equal(result.status, 0);
   assert.match(result.stdout, /Postrail/);
-  assert.match(result.stdout, /publishing is not available yet/i);
+  assert.match(result.stdout, /postrail publish/);
   assert.equal(result.stderr, "");
 }
 
@@ -32,11 +32,13 @@ for (const args of [["--version"], ["-v"]]) {
   assert.equal(result.stderr, "");
 }
 
-for (const args of [["publish", "article.md"], ["--unknown"], ["--help", "publish"]]) {
+const unconfirmed = run(['publish', 'article.md']);
+assert.equal(unconfirmed.status, 1); assert.match(unconfirmed.stderr, /PUBLISH_CONFIRM_REQUIRED/);
+for (const args of [["--unknown"], ["--help", "publish"]]) {
   const result = run(args);
   assert.equal(result.status, 1);
   assert.equal(result.stdout, "");
-  assert.match(result.stderr, /not implemented yet/);
+  assert.match(result.stderr, /Unsupported command/);
 }
 
 console.log("PASS: built CLI help/version and unsupported-command exit behavior (9 checks).");

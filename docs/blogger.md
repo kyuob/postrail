@@ -1,6 +1,6 @@
 # Google Blogger 어댑터 — 실험적
 
-대상 ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID 조회·PATCH 수정·발행/초안 전환을 구현했다. 실제 Google 계정·Cloud 설정·블로그는 아직 접근하거나 변경하지 않았다. 아래 구현은 모의 응답과 로컬 콜백 검사 대상이며 실제 지원은 묶음 검증 전까지 미확인이다.
+대상 ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID 조회·PATCH 수정·발행/초안 전환을 구현했다. 2026-11-10 사용자 지정 계정에서 실제 OAuth·관리자 블로그 선택·초안 1개 생성·같은 ID 수정·인증 조회·변경 없는 재전송 건너뛰기를 확인했다. [실검증 범위](bundled-validation-results.md)를 따른다. Cloud 설정은 바꾸지 않았으며 화면/이미지 표시·실제 만료 갱신·공개 전환·충돌 API 동작은 미검증이다.
 
 ```sh
 node dist/cli.js blogger check examples/blogger.md --json
@@ -11,7 +11,7 @@ node dist/cli.js blogger push examples/blogger.md --account main --blog-id BLOG_
 node dist/cli.js blogger get examples/blogger.md --account main --blog-id BLOG_ID --json
 ```
 
-`check`/`status`와 일반 `plan`은 인증·네트워크 없이 실행한다. plan은 `status:unverified`, `canPublish:false`, `LIVE_NOT_VERIFIED`와 `USE_BLOGGER_SUBCOMMAND`를 반환하며 미지원 입력도 blocker에 표시한다. 일반 publish는 아직 없다. 원래 KeyFlow 예제 article.md와 기존 설정은 바꾸지 않는다.
+`check`/`status`와 일반 `plan`은 인증·네트워크 없이 실행한다. plan은 `status:experimental`, `canPublish:false`, `DESTINATIONS_REQUIRED`와 `CONFIRM_REQUIRED` 및 미지원 입력 blocker를 반환한다. 공통 전송은 [publish](publish.md)의 대상 파일과 명시적 확인으로 실행한다.
 
 ## 공식 인터페이스
 
@@ -37,7 +37,7 @@ Markdown을 raw HTML 비활성 상태로 HTML 렌더링해 `content`에 넣고 �
 
 Desktop 클라이언트 JSON은 저장소 밖의 0600 파일로 두고 `--client-config`에 경로만 준다. Web/서비스 계정 JSON은 거절한다. 파일의 임의 인증/토큰 URL을 쓰지 않고 고정 Google 엔드포인트만 호출한다. S256 PKCE와 무작위 state를 쓰며 `127.0.0.1`의 임의 포트에서 최대 3분 동안 콜백을 기다린다. Host·경로·state·단일 code를 검사하고 재사용을 막는다. 코드·토큰·인증 URL·서버 응답을 출력하지 않는다. 비밀번호나 토큰을 터미널/채팅 인자로 받지 않는다. login은 --json을 받지 않으며 실패는 일반 stderr 오류 형식이다.
 
-계정의 클라이언트 설정·access/refresh token은 사용자 홈 `~/.postrail/blogger-accounts/<계정 해시>/credentials.json`에 0600으로 저장하며 부모는 0700이다. OS Keychain 암호화 저장소가 아닌 권한 제한 로컬 JSON이므로 사용자 계정·디스크 보안에 의존한다. Git·동기화·공용 로그에 넣지 않는다. Windows는 ACL 검증이 없어 인증/자격증명 보관을 명시적으로 미지원한다. 오프라인 명령은 별개다. macOS/Linux의 실제 로그인 동작도 아직 미검증이다.
+계정의 클라이언트 설정·access/refresh token은 사용자 홈 `~/.postrail/blogger-accounts/<계정 해시>/credentials.json`에 0600으로 저장하며 부모는 0700이다. OS Keychain 암호화 저장소가 아닌 권한 제한 로컬 JSON이므로 사용자 계정·디스크 보안에 의존한다. Git·동기화·공용 로그에 넣지 않는다. Windows는 ACL 검증이 없어 인증/자격증명 보관을 명시적으로 미지원한다. macOS의 실제 OAuth는 검증했으며 Linux는 실계정 미검증이다. 오프라인 명령은 별개다.
 
 만료 60초 이내의 토큰은 명령 시작 전에 refresh로 갱신한다. 서버 오류/401 뒤 원래 글쓰기를 자동 재실행하지 않는다. refresh grant가 만료/철회되면 명시적 재로그인이 필요하다. Google의 외부 Testing 앱 토큰 수명 같은 정책은 별도 운영 제약이며 영구 로그인을 보장하지 않는다. 계정 잠금으로 동시 refresh를 직렬화한다.
 

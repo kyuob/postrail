@@ -2,7 +2,7 @@
 
 ## 검증 범위
 
-2026-11-10 기준 v3 어댑터를 구현하고 오프라인/모의 응답으로 검사했다. 실제 계정 로그인·초안 생성·이미지 표시·동일 ID 수정은 아직 검증하지 않았다. `liveVerified: false`는 이 구분을 유지한다. 인증 없는 읽기 전용 스키마 조회로 현재 v3의 `writePost(input: WritePostInput!)`, `editPost(input: EditPostInput!)`만 확인했다. 공개된 안정적 외부 발행 API를 보장하는 서비스 계약은 아니므로 내부 인터페이스 변경에 영향을 받는다.
+2026-11-10 기준 v3 어댑터의 실제 Google 로그인·초안 생성·같은 ID 수정·재조회·변경 없는 전송 건너뛰기를 확인했다. 사용자는 이후 테스트 초안을 직접 삭제했다. [실검증 범위](bundled-validation-results.md) 밖의 이미지 표시·공개 발행은 미검증이며, `liveVerified: false`를 개별 실행만으로 전체 기능이 검증됐다는 주장으로 바꾸지 않는다. 공개된 안정적 외부 발행 API 계약은 아니므로 내부 인터페이스 변경에 영향을 받는다.
 
 ## 명령
 
@@ -16,7 +16,9 @@ node dist/cli.js velog push examples/velog.md --account USERNAME --confirm --jso
 node dist/cli.js velog get examples/velog.md --account USERNAME --json
 ```
 
-`check`와 `status`는 인증·브라우저·네트워크 없이 실행한다. `login`은 최대 3분 동안 전용 Chrome 창에서 사용자가 직접 로그인하도록 기다린다. 이메일 인증이나 OAuth 제공자 로그인을 직접 완료한다. 터미널이나 채팅에 비밀번호·토큰을 입력하지 않는다. 현재 로그인한 벨로그 username이 `--account`와 일치해야 한다. OAuth 제공자가 자동화 브라우저 로그인을 제한할 수 있으며 실제 동작은 미검증이다.
+`check`와 `status`는 인증·브라우저·네트워크 없이 실행한다. macOS의 `login`은 일반 Chrome을 Postrail 전용 프로필로 열며 로그인 중 자동화나 원격 디버깅을 연결하지 않는다. 사용자가 직접 로그인한 뒤 해당 Chrome 앱을 **⌘Q로 완전히 종료**하면, CLI가 같은 전용 프로필을 백그라운드에서 열어 현재 계정을 확인한다. 창만 닫으면 Chrome 프로세스가 남아 계속 기다릴 수 있다. 로그인 대기에는 시간 제한이 없다. 다른 운영체제의 수동 로그인은 아직 지원하지 않는다. 터미널이나 채팅에 비밀번호·토큰을 입력하지 않는다. 현재 벨로그 username이 `--account`와 일치해야 한다. macOS에서 Google 로그인과 이 종료 후 세션 보존을 확인했다.
+
+`--diagnostics`는 수동 Chrome 종료 여부만 고정된 메시지로 표시한다. 로그인 브라우저의 네트워크·URL·헤더·쿠키·응답은 관찰하지 않는다. Chromium 샌드박스는 켜며, 백그라운드 계정 확인은 Chrome의 일반 OS 저장소를 사용한다. 운영체제의 Chrome 저장소 접근 확인이 표시되면 사용자가 직접 판단한다. 기존 Chrome 프로필 복사나 쿠키 추출은 하지 않는다.
 
 `push`는 `--confirm` 없이는 전송하지 않는다. 원고의 `visibility`가 `draft`이면 `is_temp=true,is_private=true`, `private`이면 `false,true`, `public`이면 `false,false`를 보낸다. 기본값은 초안이다. 이 상태 변환과 실제 서비스 표시의 일치 여부는 실계정으로 확인해야 한다. 공개 원고에 대한 전송 승인은 별도로 받아야 한다.
 

@@ -71,9 +71,9 @@ test("configuration precedence and target override remain offline", t => {
   assert.equal(override.offline, true);
   assert.equal(override.ready, false);
   assert(override.targets.every(p => !p.canPublish));
-  assert.equal(override.targets.find(p => p.platform === "velog").status, "unverified");
+  assert.equal(override.targets.find(p => p.platform === "velog").status, "experimental");
   assert.equal(override.targets.find(p => p.platform === "keyflow").status, "implemented");
-  assert.deepEqual(override.targets.find(p => p.platform === "keyflow").blockers, ["USE_KEYFLOW_SUBCOMMAND"]);
+  assert.deepEqual(override.targets.find(p => p.platform === "keyflow").blockers, ["DESTINATIONS_REQUIRED", "CONFIRM_REQUIRED"]);
 });
 
 test("absent config uses defaults but explicit missing config fails", t => {
@@ -97,7 +97,7 @@ test("Blogger is accepted in metadata, --to and new config while its adapter sta
   const plan = json("plan", "article.md", "--to", "velog,tistory,keyflow,blogger");
   assert.equal(plan.ready, false);
   assert.deepEqual(plan.targets.find(p => p.platform === "blogger"), {
-    platform: "blogger", visibility: "draft", status: "unverified", canPublish: false, blockers: ["LIVE_NOT_VERIFIED", "USE_BLOGGER_SUBCOMMAND"],
+    platform: "blogger", visibility: "draft", status: "experimental", canPublish: false, blockers: ["DESTINATIONS_REQUIRED", "CONFIRM_REQUIRED"],
   });
   assert.deepEqual(json("plan", "article.md").article.targets, ["blogger"]);
 });

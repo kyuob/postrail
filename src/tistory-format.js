@@ -45,17 +45,37 @@ export function verifyBlog(config, target) {
 }
 export function postFromConfig(config, target, id) {
   verifyBlog(config, target);
-  const e = config.entry;
+  if (config.entry && config.post) fail('TISTORY_SCHEMA_UNSUPPORTED', 'Ambiguous editor post configuration.');
+  const e = config.post ?? config.entry;
+  const category = config.post ? e?.category : e?.categoryId;
   if (!e || String(e.id) !== id || typeof e.title !== 'string' || typeof e.content !== 'string'
-    || ![0, 20].includes(e.visibility) || !Number.isSafeInteger(Number(e.categoryId)) || Number(e.categoryId) < 0
+    || ![0, 20].includes(e.visibility) || !/^[0-9]+$/.test(String(category)) || !Number.isSafeInteger(Number(category))
     || !(typeof e.tags === 'string' || Array.isArray(e.tags) && e.tags.every(t => typeof t === 'string'))
     || typeof e.slogan !== 'string') fail('TISTORY_SCHEMA_UNSUPPORTED', 'The owned editor post has unsupported or incomplete fields.');
-  return { id, title: e.title, content: e.content, visibility: e.visibility, category: Number(e.categoryId),
+  const editorOptions = { uselessMarginForEntry: e.uselessMarginForEntry ?? e.uselessMargin ?? 1,
+    cclCommercial: e.cclCommercial ?? 0, cclDerive: e.cclDerive ?? 0 };
+  for (const [key, value] of Object.entries(editorOptions)) {
+    if (!/^[0-9]+$/.test(String(value)) || !Number.isSafeInteger(Number(value))) fail('TISTORY_SCHEMA_UNSUPPORTED', 'Unsupported numeric editor option.');
+    editorOptions[key] = Number(value);
+  }
+  return { id, title: e.title, content: e.content, visibility: e.visibility, category: Number(category),
     tags: Array.isArray(e.tags) ? e.tags : e.tags.split(',').map(t => t.trim()).filter(Boolean), slogan: e.slogan,
     // Fingerprint every editor field so unhandled external edits cannot silently disappear.
-    editor: e };
+    editor: e, editorOptions };
 }
 export function canonicalHtml(html) {
+  // The editor serializes image dimensions as strings after saving. Normalize
+  // only those numeric fields; keep the reference and other metadata intact.
+  html = html.replace(/(\[##_Image\|[^|]+\|CDM\|1\.3\|)(\{[^\n]*?\})(_##\])/g, (whole, prefix, json, suffix) => {
+    try {
+      const data = JSON.parse(json);
+      for (const key of ['originWidth', 'originHeight']) {
+        if (!/^[0-9]+$/.test(String(data[key])) || !Number.isSafeInteger(Number(data[key])) || Number(data[key]) <= 0) return whole;
+        data[key] = Number(data[key]);
+      }
+      return prefix + JSON.stringify(data) + suffix;
+    } catch { return whole; }
+  });
   function node(n) {
     if (n.nodeName === '#text') return n.value;
     if (n.nodeName === '#comment') return ['comment', n.data];

@@ -2,6 +2,7 @@ import { homedir } from 'node:os';
 import { fail } from './core.js';
 import { directories, hash } from './tistory-storage.js';
 import { editorConfig, verifyBlog, postFromConfig } from './tistory-format.js';
+import { manualChromeLogin } from './manual-chrome-login.js';
 
 export function tistoryTarget(blog, blogId) {
   if (typeof blog !== 'string' || !/^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/.test(blog) || ['www', 'notice', 'tistory'].includes(blog)) fail('TISTORY_BLOG_REQUIRED', 'Pass --blog with the exact Tistory subdomain name (not a URL).');
@@ -44,23 +45,15 @@ export class TistoryClient {
 export async function withTistorySession(target, action, { login = false } = {}) {
   const directory = directories(homedir(), ['.postrail', 'tistory-profiles', hash([target.blog, target.blogId])], login);
   if (!directory) fail('TISTORY_LOGIN_REQUIRED', 'Run tistory login for the requested blog and blog ID first.');
+  if (login) {
+    console.error('일반 Chrome의 Postrail 전용 프로필에서 티스토리에 로그인한 뒤, 해당 Chrome 앱을 ⌘Q로 종료해 주세요. 종료 후 블로그를 확인합니다.');
+    await manualChromeLogin(directory, { service: 'tistory', destination: target.origin + '/manage' });
+  }
   let context;
-  try { const { chromium } = await import('playwright-core'); context = await chromium.launchPersistentContext(directory, { channel: 'chrome', headless: !login, timeout: 30000, acceptDownloads: false }); }
+  try { const { chromium } = await import('playwright-core'); context = await chromium.launchPersistentContext(directory, { channel: 'chrome', chromiumSandbox: true, headless: true, timeout: 30000, acceptDownloads: false, args: ['--restore-last-session'], ignoreDefaultArgs: ['--use-mock-keychain', '--password-store=basic'] }); }
   catch { fail('TISTORY_BROWSER_FAILED', 'Cannot open the dedicated Postrail Chrome profile. Install Chrome and close another session for this blog.'); }
   try {
     const client = new TistoryClient(context.request, target);
-    if (login) {
-      const page = await context.newPage(); await page.goto(target.origin + '/manage', { timeout: 30000 });
-      const deadline = Date.now() + 180000;
-      while (Date.now() < deadline) {
-        let ready = false;
-        try { await client.identity(); ready = true; }
-        catch (e) { if (!['TISTORY_LOGIN_REQUIRED', 'TISTORY_SCHEMA_UNSUPPORTED'].includes(e.code)) throw e; }
-        if (ready) return await action(client, target);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-      fail('TISTORY_LOGIN_TIMEOUT', 'Login timed out. No post was sent.');
-    }
     await client.identity(); return await action(client, target);
   } catch (e) { if (e.code?.startsWith('TISTORY_')) throw e; fail('TISTORY_SESSION_FAILED', 'The session ended unexpectedly. Inspect local and remote state before retrying.'); }
   finally { try { await context.close(); } catch { fail('TISTORY_CLEANUP_FAILED', 'Chrome cleanup failed. Inspect the operation result before retrying.'); } }

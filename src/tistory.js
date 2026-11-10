@@ -85,8 +85,8 @@ export async function pushTistory(article, target, cwd, confirmed, session = wit
         const content = renderTistory(article, uploaded);
         const input = { id: old?.postId ?? '0', title: article.meta.title, content, visibility: article.meta.visibility === 'private' ? 0 : 20,
           category: current?.category ?? 0, slogan: current?.slogan ?? '', tag: article.meta.tags.join(','), published: 1, type: 'post',
-          password: '', uselessMarginForEntry: current?.editor.uselessMarginForEntry ?? 1,
-          cclCommercial: current?.editor.cclCommercial ?? 0, cclDerive: current?.editor.cclDerive ?? 0,
+          password: '', uselessMarginForEntry: current?.editorOptions?.uselessMarginForEntry ?? 1,
+          cclCommercial: current?.editorOptions?.cclCommercial ?? 0, cclDerive: current?.editorOptions?.cclDerive ?? 0,
           attachments: [...uploaded.values()], recaptchaValue: '', draftSequence: null, totalWritingTimeMs: 0 };
         const saved = await client.write(input, old?.postId);
         if (!saved || typeof saved.postId !== 'string' || !/^[1-9][0-9]{0,15}$/.test(saved.postId) || old && saved.postId !== old.postId) fail('TISTORY_RESPONSE_INVALID', 'No matching saved post identity was returned.');
@@ -96,7 +96,7 @@ export async function pushTistory(article, target, cwd, confirmed, session = wit
           || JSON.stringify([...post.tags].sort()) !== JSON.stringify([...article.meta.tags].sort()) || current && post.slogan !== input.slogan)
           fail('TISTORY_READBACK_FAILED', 'The editor readback differs from the requested content or state.');
         for (const key of ['uselessMarginForEntry', 'cclCommercial', 'cclDerive']) {
-          if (current && Object.hasOwn(current.editor, key) && post.editor[key] !== input[key]) fail('TISTORY_READBACK_FAILED', 'An existing editor option was not preserved.');
+          if (current && post.editorOptions?.[key] !== input[key]) fail('TISTORY_READBACK_FAILED', 'An existing editor option was not preserved.');
         }
         saveJournal(file, { ...state, status: 'succeeded', remoteHash: remoteHash(post) });
         return { ok: true, command: 'tistory push', postId: post.id, url: `${target.origin}/${post.id}`, visibility: article.meta.visibility, updated: !!old, readbackVerified: true, liveVerified: false };
