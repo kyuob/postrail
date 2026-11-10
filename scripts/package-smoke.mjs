@@ -7,6 +7,8 @@ import { createHash } from 'node:crypto';
 import { allowedPackageFile } from './package-files.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+assert(process.argv.length <= 3 && (!process.argv[2] || process.argv[2] === '--registry'), 'Only --registry is supported.');
+const fromRegistry = process.argv[2] === '--registry';
 const base = path.join(root, '.postrail/stage7'); mkdirSync(base, { recursive: true, mode: 0o700 });
 const work = mkdtempSync(path.join(base, 'package-')), output = path.join(work, 'archive'); mkdirSync(output);
 function run(command, args, cwd = root, env = process.env) {
@@ -16,7 +18,8 @@ function run(command, args, cwd = root, env = process.env) {
   return result.stdout;
 }
 const pkg = JSON.parse(readFileSync(path.join(root, 'package.json')));
-assert.equal(pkg.private, true); // Packing and local install do not authorize publication.
+assert.equal(pkg.private, false); // User authorized registry preparation; smoke checks still never publish.
+assert.deepEqual(pkg.publishConfig, { access: 'public', registry: 'https://registry.npmjs.org/' });
 run('bun', ['pm', 'pack', '--destination', output, '--quiet']);
 const archive = path.join(output, `${pkg.name.replace(/^@/, '').replaceAll('/', '-')}-${pkg.version}.tgz`); assert(existsSync(archive));
 const entries = run('tar', ['-tzf', archive]).trim().split(/\r?\n/).filter(Boolean);
@@ -24,9 +27,9 @@ for (const entry of entries) assert(allowedPackageFile(entry), `Unexpected packa
 for (const required of ['package/package.json', 'package/dist/cli.js', 'package/LICENSE', 'package/README.ko.md', 'package/docs/installation.md', 'package/docs/login.md', 'package/docs/faq.md', 'package/SECURITY.md', 'package/CHANGELOG.md']) assert(entries.includes(required), `Missing package file: ${required}`);
 assert(!run('tar', ['-tvzf', archive]).split(/\r?\n/).some(line => /^[lh]/.test(line)), 'Package must not include symlink/hardlink entries.');
 const consumer = path.join(work, 'consumer'), home = path.join(work, 'home'); mkdirSync(consumer); mkdirSync(home, { mode: 0o700 });
-writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({ name: 'postrail-install-smoke', private: true, type: 'module', dependencies: { [pkg.name]: pathToFileURL(archive).href } }, null, 2));
+writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({ name: 'postrail-install-smoke', private: true, type: 'module', dependencies: { [pkg.name]: fromRegistry ? pkg.version : pathToFileURL(archive).href } }, null, 2));
 const env = { ...process.env, HOME: home, USERPROFILE: home };
-run('bun', ['install', '--ignore-scripts'], consumer, env);
+run('bun', ['install', '--ignore-scripts', '--registry=https://registry.npmjs.org/'], consumer, env);
 const installed = path.join(consumer, 'node_modules', pkg.name);
 assert.equal(JSON.parse(readFileSync(path.join(installed, 'package.json'))).version, pkg.version);
 assert(existsSync(path.join(consumer, 'node_modules/playwright-core/package.json')));
@@ -49,7 +52,7 @@ writeFileSync(path.join(globalDir, 'package.json'), JSON.stringify({ private: tr
 const globalConfig = path.join(work, 'global-bunfig.toml');
 writeFileSync(globalConfig, `[install]\nglobalDir = ${JSON.stringify(globalDir.replaceAll('\\', '/'))}\nglobalBinDir = ${JSON.stringify(globalBin.replaceAll('\\', '/'))}\n`);
 const globalEnv = { ...env, BUN_INSTALL_GLOBAL_DIR: globalDir, BUN_INSTALL_BIN: globalBin, PATH: globalBin + path.delimiter + process.env.PATH };
-run('bun', ['add', '-g', `--config=${globalConfig}`, archive, '--ignore-scripts'], globalDir, globalEnv);
+run('bun', ['add', '-g', `--config=${globalConfig}`, fromRegistry ? `${pkg.name}@${pkg.version}` : archive, '--ignore-scripts', '--registry=https://registry.npmjs.org/'], globalDir, globalEnv);
 const globalLauncher = path.join(globalBin, process.platform === 'win32' ? 'postrail.exe' : 'postrail');
 assert(existsSync(globalLauncher), 'Isolated global launcher missing.');
 const globalPackage = path.join(globalDir, 'node_modules', pkg.name);
@@ -64,6 +67,6 @@ assert(!existsSync(globalLauncher), 'Global launcher must be removed.');
 assert(!existsSync(path.join(globalDir, 'node_modules', pkg.name)), 'Global package must be removed.');
 const proof = { ok: true, platform: process.platform, arch: process.arch, node: process.version, bun: run('bun', ['--version']).trim(), version: pkg.version,
  archive: path.relative(root, archive), sha256: createHash('sha256').update(readFileSync(archive)).digest('hex'), fileCount: entries.length,
- installedBin: true, externalDependencies: true, offlineCli: true, isolatedGlobalInstall: true, globalPath: true, globalRemoval: true, published: false };
+ installedBin: true, externalDependencies: true, offlineCli: true, isolatedGlobalInstall: true, globalPath: true, globalRemoval: true, fromRegistry, published: false };
 writeFileSync(path.join(base, 'package-proof.json'), JSON.stringify(proof, null, 2) + '\n', { mode: 0o600 });
 console.log(`PASS package: ${entries.length} allowlisted files, clean local and isolated global install, PATH, removal, dependencies, bin and offline CLI; ${process.platform}/${process.arch}, Node ${process.version}. No publication/authentication performed.`);

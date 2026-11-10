@@ -4,6 +4,8 @@ Markdown 하나를 Velog·Tistory·KeyFlow·Google Blogger로 보내는 오픈�
 
 현재 소스의 [v0.1.2 사전 릴리스](docs/release-0.1.2.md)는 벨로그 이력 대조, [이미지 용량 진단](docs/images.md), 격리된 전역 설치·제거와 릴리스 파일 검증을 추가합니다. npm 공개는 별도입니다.
 
+v0.1.3 소스에는 [티스토리·블로거 진단과 로컬 이력 대조](docs/recovery.md)를 추가했습니다. npm 공개 이름은 [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail)입니다. [registry 확인·설치 안내](docs/npm-publication.md)를 따르며 설정 변경과 실제 공개는 구분합니다.
+
 **v0.1.0은 공개된 실험적 GitHub 사전 릴리스입니다.** 지정 원고 검수에서는 벨로그·티스토리 한국어 글과 블로거 영문 글의 공개 발행, 같은ID 수정·재조회, 데스크톱 이미지 표시·클릭을 확인했습니다. 이는 당시 검수 증거이며 현재 게시 언어나 내용을 보장하는 설명은 아닙니다. Node22/24의 macOS·Linux·Windows 오프라인CI도 통과했습니다. 모든OS의 실제 로그인이나 미지원 기능까지 검증한 것은 아닙니다. [지원표](docs/support.md)와 [7단계 기록](docs/stage7-status.md)을 확인해 주세요.
 
 [English README](README.md) · [설치](docs/installation.md) · [로그인](docs/login.md) · [FAQ](docs/faq.md)
@@ -22,7 +24,7 @@ node dist/cli.js validate examples/blogger.md --json
 node dist/cli.js preview examples/blogger.md --output first-preview.html
 ```
 
-위 명령은 글을 올리지 않습니다. [v0.1.2 GitHub릴리스](https://github.com/kyuob/postrail/releases/tag/v0.1.2)의 tarball로도 설치할 수 있습니다. npm용이름은 `@kyuob/postrail`로 준비했으나 아직 공개하지 않았습니다. 다른프로젝트의 `postrail`패키지를 이름만으로 설치하지 마세요. 설치·업데이트·제거는 [설치 가이드](docs/installation.md)를 따릅니다.
+위 명령은 글을 올리지 않습니다. [v0.1.2 GitHub릴리스](https://github.com/kyuob/postrail/releases/tag/v0.1.2)의 tarball로도 설치할 수 있습니다. npm 배포 이름은 `@kyuob/postrail`입니다. 다른프로젝트의 `postrail`패키지를 이름만으로 설치하지 마세요. 공개 버전 확인·설치·업데이트·제거는 [설치 가이드](docs/installation.md)를 따릅니다.
 
 ## 로그인
 

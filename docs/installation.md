@@ -1,5 +1,13 @@
 # 설치와 첫 실행
 
+v0.1.3 소스는 공개 npm 배포를 준비한다. [npm 패키지 페이지](https://www.npmjs.com/package/@kyuob/postrail)에서 버전을 확인한 뒤 다음처럼 설치한다. 공개 여부와 관리자 검수 절차는 [npm 안내](npm-publication.md)를 참고한다. 아래 GitHub 설치 예시는 v0.1.2를 기준으로 한다.
+
+```sh
+bun add -g @kyuob/postrail --ignore-scripts
+postrail --version
+postrail --help
+```
+
 [English quick start](../README.md) · [로그인](login.md) · [문제 해결](faq.md) · [지원 범위](support.md)
 
 ## 필요한 프로그램
@@ -13,7 +21,7 @@
 
 ## GitHub 릴리스로 설치
 
-현재 소스의 배포 대상은 실험적 [v0.1.2 GitHub 사전 릴리스](https://github.com/kyuob/postrail/releases/tag/v0.1.2)다. npm에는 아직 공개하지 않았으며, 다른 프로젝트가 쓰는 `postrail` 패키지를 이름만으로 설치하지 않는다. 패키지 이름은 `@kyuob/postrail`, 설치 후 명령은 `postrail`이다. 최초 v0.1.0의 증거는 [이전 릴리스 기록](release-0.1.0.md)에 보존한다.
+GitHub 설치 예시는 실험적 [v0.1.2 사전 릴리스](https://github.com/kyuob/postrail/releases/tag/v0.1.2)다. npm 배포와 버전이 다를 수 있으므로 다운로드한 파일의 버전을 확인한다. 다른 프로젝트가 쓰는 `postrail` 패키지를 이름만으로 설치하지 않는다. 패키지 이름은 `@kyuob/postrail`, 설치 후 명령은 `postrail`이다. 최초 v0.1.0의 증거는 [이전 릴리스 기록](release-0.1.0.md)에 보존한다.
 
 릴리스에서 `kyuob-postrail-0.1.2.tgz`와 `SHA256SUMS`를 같은 폴더에 내려받아 체크섬을 확인한다. macOS는 `shasum -a 256 -c SHA256SUMS`, Linux는 `sha256sum -c SHA256SUMS`를 사용할 수 있다. 이후 해당 폴더에서 실행한다.
 
@@ -23,11 +31,11 @@ postrail --version
 postrail --help
 ```
 
-`--version`은 `0.1.2`를 출력해야 한다. npm명령으로 설치하는 경로는 별도 계정 인증·이름 소유권·공개 승인을 확인하기 전까지 제공하지 않는다.
+이 GitHub 파일로 설치했다면 `--version`은 `0.1.2`를 출력해야 한다. registry에서 설치했다면 npm 페이지의 실제 배포 버전과 대조한다.
 
 ## 소스에서 실행
 
-현재 레지스트리에 공개한 패키지는 없다. `bun add -g postrail`처럼 이름만으로 설치하는 방법은 아직 안내하지 않는다.
+소스 빌드는 npm 계정 없이 실행할 수 있다. registry 설치 시에도 다른 프로젝트의 unscoped `postrail`을 사용하지 않는다.
 
 ```sh
 git clone https://github.com/kyuob/postrail.git

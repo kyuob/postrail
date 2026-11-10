@@ -56,6 +56,7 @@ export function readJournal(file, account, blogId, articleId) {
   if (state.version !== 1 || state.account !== account || state.blogId !== blogId || state.articleId !== articleId
     || typeof state.userId !== 'string' || !/^[0-9]{1,30}$/.test(state.userId) || !['pending', 'unknown', 'succeeded'].includes(state.status)
     || !/^[a-f0-9]{64}$/.test(state.contentHash ?? '') || state.postId !== undefined && (typeof state.postId !== 'string' || !/^[0-9]{1,30}$/.test(state.postId))
+    || state.recoveredContentHash !== undefined && (state.status !== 'succeeded' || !/^[a-f0-9]{64}$/.test(state.recoveredContentHash))
     || state.status === 'succeeded' && (!state.postId || !/^[a-f0-9]{64}$/.test(state.remoteHash ?? ''))) fail('BLOGGER_STORAGE_FAILED', 'Invalid article journal identity or state.');
   return state;
 }

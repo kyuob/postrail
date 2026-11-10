@@ -4,6 +4,8 @@ Write once. Publish across your blogs.
 
 Experimental [v0.1.2](docs/release-0.1.2.md) adds Velog recovery, [image diagnostics](docs/images.md), isolated global-install checks and release verification. npm publication remains separate.
 
+The v0.1.3 source adds [Tistory/Blogger inspection and local reconciliation](docs/recovery.md) and prepares public npm distribution as [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail). Follow the [registry verification and installation guide](docs/npm-publication.md); package configuration alone is not publication evidence.
+
 [한국어](README.ko.md) · [Installation](docs/installation.md) · [Login](docs/login.md) · [FAQ](docs/faq.md) · [Support matrix](docs/support.md)
 
 Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and Google Blogger**.
@@ -14,7 +16,7 @@ Postrail is an open-source CLI project targeting **Velog, Tistory, KeyFlow, and 
 
 Requires [Bun](https://bun.sh/) 1.3+ for development and Node.js 22+ for the built CLI.
 
-Install the verified GitHub release tarball or build from source using the [installation guide](docs/installation.md). No npm registry package has been released; the unscoped npm name `postrail` belongs to another project. Velog/Tistory manual authentication currently supports macOS only.
+Use the scoped npm package after checking its registry availability, the verified GitHub release tarball, or build from source using the [installation guide](docs/installation.md). The unscoped npm name `postrail` belongs to another project. Velog/Tistory manual authentication currently supports macOS only.
 
 ```sh
 bun install --frozen-lockfile

@@ -1,5 +1,7 @@
 # FAQ와 문제 해결
 
+v0.1.3 소스에서는 [Tistory/Blogger 이력 대조](recovery.md)를 추가했다. 아래 v0.1.2의 Velog 전용 설명은 이전 배포 기준이다. npm 설치와 공개 여부는 [registry 확인 안내](npm-publication.md)를 따른다.
+
 [설치](installation.md) · [로그인](login.md) · [지원표](support.md) · [공통 전송](publish.md)
 
 ## 설치했는데 postrail 명령이 없어요

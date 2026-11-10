@@ -39,12 +39,16 @@ Usage:
   postrail tistory login --blog <name> --blog-id <id>
   postrail tistory status <article.md> --blog <name> --blog-id <id> [--json]
   postrail tistory get <article.md> --blog <name> --blog-id <id> [--json]
+  postrail tistory inspect <article.md> --blog <name> --blog-id <id> [--published-to tistory,velog] [--json]
+  postrail tistory reconcile <article.md> --blog <name> --blog-id <id> --review <hash> --confirm [--accept-tags] [--published-to tistory,velog] [--json]
   postrail tistory push <article.md> --blog <name> --blog-id <id> --confirm [--json]
   postrail blogger check <article.md> [--json]
   postrail blogger login --account <name> --client-config <desktop-client.json>
   postrail blogger blogs --account <name> [--json]
   postrail blogger status <article.md> --account <name> --blog-id <id> [--json]
   postrail blogger get <article.md> --account <name> --blog-id <id> [--json]
+  postrail blogger inspect <article.md> --account <name> --blog-id <id> [--published-to blogger,velog] [--json]
+  postrail blogger reconcile <article.md> --account <name> --blog-id <id> --review <hash> --confirm [--accept-tags] [--published-to blogger,velog] [--json]
   postrail blogger push <article.md> --account <name> --blog-id <id> --confirm [--json]
   postrail --help
   postrail --version
@@ -84,6 +88,15 @@ function parse() {
   return { command, file, options };
 }
 
+function printRecovery(result) {
+  if (result.command.endsWith(' reconcile')) return console.log(`Local journal reconciled: ${result.postId}; private backup verified; no remote post was written.`);
+  console.log(`${result.command}: ${result.postId}; local state: ${result.localStatus}`);
+  for (const [field, matches] of Object.entries(result.comparisons)) console.log(`  ${field}: ${matches ? 'matches' : 'not verified or different'}`);
+  console.log(`  visibility: intended=${result.visibility.intended}; actual=${result.visibility.actual}`);
+  console.log(`  tags: intended=${JSON.stringify(result.tags.intended)}; actual=${JSON.stringify(result.tags.actual)}`);
+  if (result.preserved) console.log(`  preserved editor settings: ${JSON.stringify(result.preserved)}`);
+  console.log(`  local reconciliation eligible: ${result.canReconcile}; review hash: ${result.reviewHash}`);
+}
 async function main() {
   if (args[0] === 'publish') {
     const result = await publishCommand(args.slice(1));
@@ -109,6 +122,7 @@ async function main() {
   if (args[0] === "blogger") {
     const result = await bloggerCommand(args.slice(1));
     if (json) console.log(JSON.stringify(result));
+    else if (['blogger inspect', 'blogger reconcile'].includes(result.command)) printRecovery(result);
     else if (result.command === "blogger status") console.log(`Local Blogger state: ${result.state.status}`);
     else if (result.command === "blogger check") console.log(result.canPush ? "Blogger offline check: passed." : `Blogger check: ${result.blockers.join(", ")}`);
     else if (result.command === "blogger blogs") for (const blog of result.blogs) console.log(`${blog.blogId}: ${blog.name}`);
@@ -120,6 +134,7 @@ async function main() {
   if (args[0] === "tistory") {
     const result = await tistoryCommand(args.slice(1));
     if (json) console.log(JSON.stringify(result));
+    else if (['tistory inspect', 'tistory reconcile'].includes(result.command)) printRecovery(result);
     else if (result.command === "tistory status") console.log(`Local Tistory state: ${result.state.status}`);
     else if (result.command === "tistory check") console.log(result.canPush ? "Tistory offline check: passed." : `Tistory check: ${result.blockers.join(", ")}`);
     else if (result.command === "tistory push") console.log(result.skipped ? `Unchanged; upload skipped (${result.postId}).` : `Tistory ${result.visibility}: ${result.postId}\n${result.url}`);

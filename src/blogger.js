@@ -1,17 +1,17 @@
 import { parseFragment } from 'parse5';
-import { fail } from './core.js';
+import { fail, contentHashForTargets } from './core.js';
 import { accountName, numericId } from './blogger-client.js';
 import { withBloggerSession } from './blogger-auth.js';
 import { digest, journalPath, readJournal, savePrivate, locked } from './blogger-storage.js';
 
-function checkArticle(article, pushing = false) {
+export function checkArticle(article, pushing = false) {
   const blockers = [];
   if (article.meta.visibility === 'private') blockers.push('BLOGGER_PRIVATE_UNSUPPORTED');
   if ([...article.images.values()].some(i => i.kind === 'local')) blockers.push('BLOGGER_LOCAL_IMAGE_UNSUPPORTED');
   if (pushing && blockers.length) fail(blockers[0], 'Blogger supports draft/public and remote image URLs here. Private posts and local image uploads are not implemented.');
   return blockers;
 }
-function htmlValue(html) {
+export function htmlValue(html) {
   function node(n) {
     if (n.nodeName === '#text') return n.value;
     if (n.nodeName === '#comment') return ['comment', n.data];
@@ -24,19 +24,19 @@ function postIdentity(post, blogId, id) {
     || post.blog?.id !== blogId) fail('BLOGGER_RESPONSE_INVALID', 'Google did not confirm the expected blog and post identity.');
   return post;
 }
-function postResult(post, blogId, id) {
+export function postResult(post, blogId, id) {
   postIdentity(post, blogId, id);
   if (!['DRAFT', 'LIVE'].includes(post.status) || typeof post.title !== 'string' || typeof post.content !== 'string'
     || !Array.isArray(post.labels ?? []) || (post.labels ?? []).some(t => typeof t !== 'string') || typeof post.etag !== 'string' || !post.etag || /[\r\n]/.test(post.etag)) fail('BLOGGER_RESPONSE_INVALID', 'Google did not confirm the expected blog, post identity, status and content.');
   return post;
 }
-const remoteHash = post => digest({ id: post.id, blog: post.blog.id, title: post.title, content: post.content, labels: [...(post.labels ?? [])].sort(), status: post.status,
+export const remoteHash = post => digest({ id: post.id, blog: post.blog.id, title: post.title, content: post.content, labels: [...(post.labels ?? [])].sort(), status: post.status,
   etag: post.etag, published: post.published ?? null, updated: post.updated ?? null, location: post.location ?? null, customMetaData: post.customMetaData ?? null });
 function verifyContent(post, input) {
   if (post.title !== input.title || JSON.stringify(htmlValue(post.content)) !== JSON.stringify(htmlValue(input.content))
     || JSON.stringify([...(post.labels ?? [])].sort()) !== JSON.stringify([...input.labels].sort())) fail('BLOGGER_READBACK_FAILED', 'The post readback differs from the requested title, HTML or labels.');
 }
-function verifyUser(user) { if (typeof user?.id !== 'string' || !/^[0-9]{1,30}$/.test(user.id)) fail('BLOGGER_ACCOUNT_MISMATCH', 'The session did not confirm a Blogger user.'); }
+export function verifyUser(user) { if (typeof user?.id !== 'string' || !/^[0-9]{1,30}$/.test(user.id)) fail('BLOGGER_ACCOUNT_MISMATCH', 'The session did not confirm a Blogger user.'); }
 export function checkBlogger(article) {
   const blockers = checkArticle(article);
   return { ok: true, command: 'blogger check', offline: true, articleId: article.meta.id, visibility: article.meta.visibility, canPush: !blockers.length, blockers, liveVerified: false };
@@ -77,7 +77,7 @@ export async function pushBlogger(article, account, blogId, cwd, confirmed, sess
       if (old) {
         current = postResult(await client.read(blogId, old.postId), blogId, old.postId);
         if (remoteHash(current) !== old.remoteHash) fail('BLOGGER_REMOTE_CONFLICT', 'The remote post changed outside Postrail. Resolve it before updating.');
-        if (old.contentHash === article.contentHash) return { ok: true, command: 'blogger push', skipped: true, postId: old.postId, liveVerified: false };
+        if (old.contentHash === article.contentHash || old.recoveredContentHash === contentHashForTargets(article, ['blogger'])) return { ok: true, command: 'blogger push', skipped: true, postId: old.postId, liveVerified: false };
       }
       const state = { version: 1, account, userId: user.id, blogId, articleId: article.meta.id, contentHash: article.contentHash, postId: old?.postId, status: 'pending' };
       savePrivate(file, state);

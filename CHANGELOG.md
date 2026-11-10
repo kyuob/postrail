@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.3 — npm distribution and expanded recovery
+
+- Extend explicit inspect/reconcile to Tistory and Blogger: bind saved IDs, source targets, body, visibility and ownership; tag differences require separate acceptance. Preserve exact private backups and locks; never write remote posts or recreate missing IDs.
+- Verify Tistory local-image CDN bytes after complete body reconstruction. Keep Blogger private/local images and Tistory draft slots unsupported.
+- Preserve canonical approved-source hashes for unchanged skips after reconciliation; remote conflicts remain checked first.
+- Prepare a public scoped npm package with explicit registry/access and private:false following user approval. Publication requires verified namespace ownership, authentication, passing CI and registry readback.
+- Add registry readback/integrity verification, opt-in clean registry installation and dry-run publication checks. No real blog or user-journal recovery is performed.
+
 ## 0.1.2 — 2026-11-10
 
 - Combine the stability and explicit Velog recovery changes below into an experimental GitHub prerelease; npm publication remains excluded.

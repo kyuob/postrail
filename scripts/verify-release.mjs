@@ -32,7 +32,8 @@ const entries = run('tar', ['-tzf', path.join(work, archive)]).split(/\r?\n/);
 for (const entry of entries) assert(allowedPackageFile(entry), 'Unexpected package file in release.');
 for (const entry of ['package/package.json', 'package/dist/cli.js', 'package/LICENSE', 'package/README.md']) assert(entries.includes(entry), 'Required package file missing.');
 const pkg = JSON.parse(run('tar', ['-xOzf', path.join(work, archive), 'package/package.json']));
-assert.equal(pkg.name, '@kyuob/postrail'); assert.equal(pkg.version, tag.slice(1)); assert.equal(pkg.private, true);
+assert.equal(pkg.name, '@kyuob/postrail'); assert.equal(pkg.version, tag.slice(1)); assert.equal(typeof pkg.private, 'boolean');
+if (!pkg.private) { assert.equal(pkg.publishConfig?.access, 'public'); assert.equal(pkg.publishConfig?.registry, 'https://registry.npmjs.org/'); }
 assert(!run('tar', ['-tvzf', path.join(work, archive)]).split(/\r?\n/).some(line => /^[lh]/.test(line)), 'Archive contains a link.');
 writeFileSync(path.join(work, 'proof.json'), JSON.stringify({ tag, commit, sha256, matchesTestedArchive: !!expectedArchive, assets: release.assets.map(({ name, size }) => ({ name, size })), passed: true }, null, 2), { mode: 0o600 });
 console.log(`PASS release: ${tag}, exact tag commit ${commit.slice(0, 7)}, passing CI, prerelease, package identity and downloaded asset checksums.`);

@@ -1,5 +1,7 @@
 # Google Blogger 어댑터 — 실험적
 
+v0.1.3 소스의 `blogger inspect`와 `blogger reconcile`은 사용자·ADMIN 블로그·저장 ID를 조회하고 명시적으로 로컬 이력을 대조한다. 원격 글은 쓰지 않는다. [복구 순서와 제한](recovery.md)을 참고한다. 새 기능은 합성 응답으로 검증했으며 아래 과거 실계정 증거와 구분한다.
+
 대상ID: `blogger`. Desktop OAuth 로그인·토큰 갱신·관리자 블로그 목록·초안 생성·ID조회·PATCH수정·발행/초안 전환을 구현했다. 2026-11-10 지정 계정에서 실제OAuth·관리자 선택·초안 생성·같은ID 수정·인증조회·변경 없는 전송 건너뛰기를 확인했다. 이어 영문 원고의 실제 공개 전환·같은ID 수정과 공개CDN이미지12개·추천 이미지2개의 클릭을 macOS Chrome에서 확인했다. [초기 실검증](bundled-validation-results.md)과 [공개 검수](publication-fable52.md)를 구분한다. Cloud설정은 바꾸지 않았으며 실제 만료 갱신·공개→초안 되돌리기·충돌API의 실계정 동작은 미검증이다.
 
 ```sh

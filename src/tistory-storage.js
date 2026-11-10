@@ -39,6 +39,7 @@ export function readJournal(file, target, articleId) {
   if (!value || value.version !== 1 || value.blog !== target.blog || value.blogId !== target.blogId || value.articleId !== articleId
     || !['pending', 'unknown', 'succeeded'].includes(value.status) || !/^[a-f0-9]{64}$/.test(value.contentHash ?? '')
     || (value.postId !== undefined && (typeof value.postId !== 'string' || !/^[1-9][0-9]{0,15}$/.test(value.postId)))
+    || (value.recoveredContentHash !== undefined && (value.status !== 'succeeded' || !/^[a-f0-9]{64}$/.test(value.recoveredContentHash)))
     || (value.status === 'succeeded' && (!value.postId || !/^[a-f0-9]{64}$/.test(value.remoteHash ?? '')))) fail('TISTORY_STORAGE_FAILED', 'Invalid journal identity or state.');
   return value;
 }

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { verifyReleaseMetadata, verifyReleaseBytes } from './release-verification.mjs';
 import { allowedPackageFile } from './package-files.mjs';
+import { verifyNpmArtifact } from './npm-verification.mjs';
 
 test('release verification binds prerelease assets and CI to exact tag commit', () => {
   const commit = 'a'.repeat(40), tag = 'v0.1.2';
@@ -17,6 +18,13 @@ test('release verification binds prerelease assets and CI to exact tag commit', 
 test('shared package allowlist rejects credentials, histories and traversal', () => {
   for (const entry of ['package/dist/cli.js', 'package/docs/images.md', 'package/package.json']) assert(allowedPackageFile(entry));
   for (const entry of ['package/.env', 'package/.postrail/state.json', 'package/../secret', '/etc/passwd', 'package/docs/deep/secret.md']) assert(!allowedPackageFile(entry));
+});
+test('npm readback binds package identity, official URL, integrity and tested archive', () => {
+  const bytes = Buffer.from('tested archive'), name = '@kyuob/postrail', version = '0.1.3';
+  const meta = { name, version, dist: { tarball: `https://registry.npmjs.org/${name}/-/postrail-${version}.tgz`, integrity: 'sha512-' + createHash('sha512').update(bytes).digest('base64') } };
+  assert.equal(verifyNpmArtifact(meta, name, version, bytes, bytes).length, 64);
+  for (const bad of [{ ...meta, name: '@other/postrail' }, { ...meta, version: '0.1.2' }, { ...meta, dist: { ...meta.dist, tarball: 'https://evil.test/archive.tgz' } }, { ...meta, dist: { ...meta.dist, integrity: 'wrong' } }]) assert.throws(() => verifyNpmArtifact(bad, name, version, bytes, bytes));
+  assert.throws(() => verifyNpmArtifact(meta, name, version, bytes, Buffer.from('different')));
 });
 test('checksum verification rejects corruption, wrong names, extra entries and malformed hashes', () => {
   const name = 'kyuob-postrail-0.1.2.tgz', bytes = Buffer.from('fixture archive'), hash = createHash('sha256').update(bytes).digest('hex');
