@@ -1,6 +1,6 @@
 # 설치와 첫 실행
 
-현재 소스와 패키지의 버전은0.1.4다. [npm 패키지 페이지](https://www.npmjs.com/package/@kyuob/postrail)에서 공개된 버전을 확인한 뒤 다음처럼 설치한다. 공개 상태와 관리자 검수 절차는 [npm 안내](npm-publication.md)를 참고한다. 아래 GitHub 설치 예시는 v0.1.2를 기준으로 한다.0.1.4에서 추가된 기능은 기존0.1.3배포물에 소급 포함되지 않는다.
+현재 소스의 버전은0.1.5다. [npm 패키지 페이지](https://www.npmjs.com/package/@kyuob/postrail)에서 공개된 버전을 확인한 뒤 다음처럼 설치한다. 공개 상태와 관리자 검수 절차는 [npm 안내](npm-publication.md)를 참고한다. 아래 GitHub 설치 예시는 v0.1.2를 기준으로 한다. 새 버전의 기능은 이전 배포물에 소급 포함되지 않는다.
 
 ```sh
 bun add -g @kyuob/postrail --ignore-scripts

@@ -2,7 +2,7 @@
 
 Write once. Publish across your blogs.
 
-Experimental **v0.1.4** adds an explicit documentation package allowlist, configurable macOS Chrome paths and common publishing's local-only recovery hints. It retains Tistory/Blogger [inspection and local reconciliation](docs/recovery.md), Velog recovery and [image diagnostics](docs/images.md). Install the scoped [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail) package using the [installation and registry verification guide](docs/npm-publication.md).
+Experimental **v0.1.5** consolidates strict option parsing, command-owned output and registered public errors, with pinned formatting checks in CI. It retains the documentation package allowlist, configurable Chrome paths, Tistory/Blogger [inspection and local reconciliation](docs/recovery.md), Velog recovery and [image diagnostics](docs/images.md). Install the scoped [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail) package using the [installation and registry verification guide](docs/npm-publication.md).
 
 See the [changelog](CHANGELOG.md) for the patch details. Earlier v0.1.3 archives are unchanged. GitHub releases, npm distribution and actual blog publishing remain separate states; source version alone is not publication evidence.
 

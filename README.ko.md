@@ -2,7 +2,7 @@
 
 Markdown 하나를 Velog·Tistory·KeyFlow·Google Blogger로 보내는 오픈소스 CLI입니다.
 
-**v0.1.4**는 배포 문서 허용 목록, macOS Chrome 실행 경로 지정, 공통 전송의 로컬 상태 안내를 추가합니다. 벨로그 이력 대조·[이미지 용량 진단](docs/images.md), [티스토리·블로거 진단과 로컬 이력 대조](docs/recovery.md)도 포함합니다. [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail) 설치는 [registry 확인·설치 안내](docs/npm-publication.md)를 따릅니다.
+**v0.1.5**는 옵션 파싱·명령별 출력·공개 오류 코드 관리를 정리하고 CI 서식 검사를 추가합니다. 배포 문서 허용 목록, macOS Chrome 실행 경로 지정, 벨로그 이력 대조·[이미지 용량 진단](docs/images.md), [티스토리·블로거 진단과 로컬 이력 대조](docs/recovery.md)도 유지합니다. [`@kyuob/postrail`](https://www.npmjs.com/package/@kyuob/postrail) 설치는 [registry 확인·설치 안내](docs/npm-publication.md)를 따릅니다.
 
 패치 내용은 [변경 기록](CHANGELOG.md)을 확인하세요. 기존0.1.3배포물은 바뀌지 않습니다. GitHub릴리스·npm배포·실제 블로그 발행은 각각 구분하며, 소스의 버전 번호만으로 공개 완료를 판단하지 않습니다.
 

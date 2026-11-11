@@ -104,7 +104,7 @@ assert.equal(pkg.private, false); // Registry preparation is authorized; docs ch
 assert.equal(pkg.publishConfig.access, "public");
 assert.equal(pkg.publishConfig.registry, "https://registry.npmjs.org/");
 assert.equal(pkg.name, "@kyuob/postrail");
-assert.equal(pkg.version, "0.1.4");
+assert.equal(pkg.version, "0.1.5");
 const workflowText = readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
 const workflow = parseDocument(workflowText).toJS();
 assert.equal(workflow.permissions.contents, "read");

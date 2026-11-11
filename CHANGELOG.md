@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.5 — 2026-11-11
 
 - Share strict CLI option parsing while retaining each command's allowed options and validation order.
 - Move platform text output to command-owned printers and keep the CLI entry point as a router.

@@ -1,6 +1,6 @@
 {
   "name": "@kyuob/postrail",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A Markdown publishing CLI project for Velog, Tistory, KeyFlow, and Google Blogger.",
   "type": "module",
   "private": false,

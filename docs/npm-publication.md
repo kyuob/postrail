@@ -1,6 +1,6 @@
 # npm 공개 상태와 검수
 
-현재 소스와 패키지의 버전은0.1.4다. 배포 파일은 사용자가 받는 문서와 실행 파일로 제한한다. 실제 공개 여부는 [공식 registry 메타데이터](https://registry.npmjs.org/@kyuob%2Fpostrail)의 버전·latest·무결성과 검수한 tarball의 바이트 일치로 판단한다. 단순 버전 변경이나 GitHub push를 npm 공개로 표시하지 않는다. 배포 실행 상태와 정확한 커밋의 검증은 [0.1.4 배포 기록](https://github.com/kyuob/postrail/blob/main/docs/release-0.1.4.md)에서 구분한다.
+현재 소스의 버전은0.1.5다. 배포 파일은 사용자가 받는 문서와 실행 파일로 제한한다. 실제 공개 여부는 [공식 registry 메타데이터](https://registry.npmjs.org/@kyuob%2Fpostrail)의 버전·latest·무결성과 검수한 tarball의 바이트 일치로 판단한다. 단순 버전 변경이나 GitHub push를 npm 공개로 표시하지 않는다. 배포 실행 상태와 정확한 커밋의 검증은 [0.1.5 배포 기록](https://github.com/kyuob/postrail/blob/main/docs/release-0.1.5.md)에서 구분한다.
 
 이전 배포 관찰:2026-11-10에0.1.3의 실제 공개와 당시 latest0.1.3을 확인했다.0.1.3 공개 시각은2026-11-10T12:40:54.791Z이며37파일·해제 후1,428,206바이트였다.0.1.4의 수정은 그 옛 배포물을 변경하지 않는다.
 
