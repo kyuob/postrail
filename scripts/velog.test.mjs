@@ -760,6 +760,130 @@ test("metadata edits outside Postrail conflict; updates preserve summary, series
     "VELOG_REMOTE_CONFLICT",
   );
 });
+test("explicit local cover updates the same post and is uploaded once", async (t) => {
+  const f = fixture(t, "draft", "![cover](image.png)\n![repeat](image.png)\n");
+  const s = server();
+  await pushVelog(f.article(), "tester", f.dir, true, s.session);
+  const originalHash = f.article().contentHash;
+  writeFileSync(f.file, f.text.replace("targets: [velog]", "targets: [velog]\ncover: image.png"));
+  assert.notEqual(f.article().contentHash, originalHash);
+  const result = await pushVelog(f.article(), "tester", f.dir, true, s.session);
+  assert.equal(result.postId, "post-1");
+  assert.equal(s.state.writes.length, 2);
+  assert.equal(s.state.writes[1].update, true);
+  assert.equal(s.state.writes[1].input.thumbnail, "https://velog.velcdn.com/images/test/image.png");
+  assert.equal(s.state.uploads.length, 2); // One image per write despite two inline references.
+  const readback = await getVelog(f.article(), "tester", f.dir, s.session);
+  assert.equal(readback.thumbnail, s.state.post.thumbnail);
+  assert.equal(readback.matchesLastSaved, true);
+  assert.equal((await pushVelog(f.article(), "tester", f.dir, true, s.session)).skipped, true);
+  assert.equal(s.state.writes.length, 2);
+});
+test("new cover readback cannot silently omit the representative image", async (t) => {
+  const f = fixture(t, "draft", "![cover](image.png)\n");
+  writeFileSync(f.file, f.text.replace("targets: [velog]", "targets: [velog]\ncover: image.png"));
+  const s = server();
+  const write = s.client.write;
+  s.client.write = async (...args) => {
+    const post = await write(...args);
+    post.thumbnail = null;
+    s.state.post.thumbnail = null;
+    return post;
+  };
+  await rejects(
+    () => pushVelog(f.article(), "tester", f.dir, true, s.session),
+    "VELOG_READBACK_FAILED",
+  );
+  assert.equal(f.state().status, "unknown");
+  assert.equal(f.state().postId, "post-1");
+  assert.equal(s.state.writes.length, 1);
+});
+test("cover rejects remote or non-inline images and unsupported target combinations", (t) => {
+  const f = fixture(t, "draft", "![cover](image.png)\n");
+  for (const cover of ["https://example.com/a.png", "missing.png", "../outside.png"]) {
+    writeFileSync(f.file, f.text.replace("targets: [velog]", `targets: [velog]\ncover: ${cover}`));
+    assert.throws(f.article, (error) => error.code === "INVALID_IMAGE");
+  }
+  writeFileSync(
+    f.file,
+    f.text.replace("targets: [velog]", "targets: [velog, blogger]\ncover: image.png"),
+  );
+  assert.throws(
+    () => loadArticle(f.file, loadConfig(path.join(f.dir, "postrail.json"), false)),
+    (error) => error.code === "INVALID_METADATA",
+  );
+  writeFileSync(f.file, f.text.replace("targets: [velog]", "targets: [velog]\ncover: null"));
+  assert.throws(f.article, (error) => error.code === "INVALID_METADATA");
+});
+test("Unicode and space-containing cover paths use the same normalized image key", async (t) => {
+  for (const name of ["표지.png", "cover image.png", "%ED%91%9C%EC%A7%80.png"]) {
+    const f = fixture(t, "draft", `![cover](<${name}>)\n`);
+    writeFileSync(path.join(f.dir, decodeURIComponent(name)), png);
+    writeFileSync(
+      f.file,
+      f.text.replace("targets: [velog]", `targets: [velog]\ncover: ${JSON.stringify(name)}`),
+    );
+    const article = f.article();
+    assert.equal(article.images.get(article.meta.cover).kind, "local");
+    const s = server();
+    await pushVelog(article, "tester", f.dir, true, s.session);
+    assert.equal(s.state.post.thumbnail, "https://velog.velcdn.com/images/test/image.png");
+    assert.equal(s.state.uploads.length, 1);
+  }
+});
+test("recovery refuses a missing or wrong cover and accepts the verified inline image", async (t) => {
+  const f = fixture(t, "draft", "![cover](image.png)\n");
+  writeFileSync(f.file, f.text.replace("targets: [velog]", "targets: [velog]\ncover: image.png"));
+  const s = server();
+  const write = s.client.write;
+  s.client.write = async (...args) => {
+    const post = await write(...args);
+    post.thumbnail = null;
+    s.state.post.thumbnail = null;
+    return post;
+  };
+  const article = f.article();
+  await rejects(
+    () => pushVelog(article, "tester", f.dir, true, s.session),
+    "VELOG_READBACK_FAILED",
+  );
+  const request = async () => new Response(png, { status: 200 });
+  for (const thumbnail of [null, "https://velog.velcdn.com/images/test/wrong.png"]) {
+    s.state.post.thumbnail = thumbnail;
+    const inspected = await inspectVelog(article, "tester", f.dir, s.session, request);
+    assert.equal(inspected.comparisons.body, true);
+    assert.equal(inspected.comparisons.images, true);
+    assert.equal(inspected.comparisons.thumbnail, false);
+    assert.equal(inspected.canReconcile, false);
+    await rejects(
+      () =>
+        reconcileVelog(
+          article,
+          "tester",
+          f.dir,
+          { confirmed: true, reviewHash: inspected.reviewHash },
+          s.session,
+          request,
+        ),
+      "VELOG_RECOVERY_MISMATCH",
+    );
+    assert.equal(f.state().status, "unknown");
+  }
+  s.state.post.thumbnail = "https://velog.velcdn.com/images/test/image.png";
+  const inspected = await inspectVelog(article, "tester", f.dir, s.session, request);
+  assert.equal(inspected.comparisons.thumbnail, true);
+  assert.equal(inspected.canReconcile, true);
+  await reconcileVelog(
+    article,
+    "tester",
+    f.dir,
+    { confirmed: true, reviewHash: inspected.reviewHash },
+    s.session,
+    request,
+  );
+  assert.equal((await pushVelog(article, "tester", f.dir, true, s.session)).skipped, true);
+  assert.equal(s.state.writes.length, 1);
+});
 test("inline/reference Unicode image offsets, deduplication and immutable snapshots", async (t) => {
   const body =
     '한글😀\n![그림](image.png "제목")\n![다시][pic]\n\n[pic]: image.png "설명"\n\n```md\n![코드](image.png)\n```\n';

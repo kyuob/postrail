@@ -165,7 +165,7 @@ export function parseArticle(file, config, overrideTargets) {
       "Frontmatter must be valid YAML without duplicate keys, custom tags or aliases.",
     );
   }
-  keys(meta, ["id", "title", "tags", "visibility", "targets"], "INVALID_METADATA");
+  keys(meta, ["id", "title", "tags", "visibility", "targets", "cover"], "INVALID_METADATA");
   if (typeof meta.id !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(meta.id))
     fail(
       "INVALID_METADATA",
@@ -198,6 +198,15 @@ export function parseArticle(file, config, overrideTargets) {
     );
   const articleTargets = meta.targets === undefined ? config.targets : targets(meta.targets);
   const chosenTargets = overrideTargets === undefined ? articleTargets : targets(overrideTargets);
+  if (
+    meta.cover !== undefined &&
+    (typeof meta.cover !== "string" ||
+      !meta.cover.trim() ||
+      meta.cover !== meta.cover.trim() ||
+      /[\x00-\x1f\x7f]/.test(meta.cover) ||
+      chosenTargets.some((target) => target !== "velog"))
+  )
+    fail("INVALID_METADATA", "Cover must be a nonempty local inline image path for Velog only.");
   const chosenVisibility = visibility(
     meta.visibility === undefined ? config.visibility : meta.visibility,
     "INVALID_METADATA",
@@ -213,6 +222,7 @@ export function parseArticle(file, config, overrideTargets) {
       tags,
       visibility: chosenVisibility,
       targets: chosenTargets,
+      ...(meta.cover !== undefined ? { cover: md.normalizeLink(meta.cover) } : {}),
     },
     body,
     md,
@@ -310,6 +320,11 @@ export function loadArticle(file, config, overrideTargets) {
     }
   }
   inspect(tokens);
+  if (parsed.meta.cover !== undefined && images.get(parsed.meta.cover)?.kind !== "local")
+    fail(
+      "INVALID_IMAGE",
+      "Cover must refer to the exact path of a local image in the article body.",
+    );
   const article = { ...parsed, images, warnings: [...warnings] };
   article.contentHash = contentHashForTargets(article);
   return article;

@@ -56,6 +56,7 @@ targets: [velog, tistory, keyflow, blogger]
 | tags | 아니요 | 중복 없는 문자열 배열, 최대 30개, 각각 최대 100 UTF-16 코드 단위. 생략 시 빈 배열 |
 | visibility | 아니요 | draft/private/public. 플랫폼이 세 상태를 모두 지원한다는 뜻은 아님 |
 | targets | 아니요 | velog/tistory/keyflow/blogger 중 중복 없는 비어 있지 않은 배열 |
+| cover | 아니요 | 벨로그 단독 전송에서만 지원. 본문에 포함된 로컬 이미지의 경로와 정확히 같아야 하며, 업로드된 이미지가 대표 썸네일로 설정된다. 원격 URL·본문에 없는 이미지·다른 플랫폼 조합은 거부 |
 
 선택 필드를 쓸 때 `null`은 허용하지 않는다. 본문도 비어 있으면 안 된다. 원고는 최대 2 MiB, frontmatter는 최대 32,768 UTF-16 코드 단위, 설정은 최대 64 KiB다.
 

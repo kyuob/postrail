@@ -143,6 +143,7 @@ export async function getVelog(article, account, cwd, session = withVelogSession
       visibility: post.is_temp ? "draft" : post.is_private ? "private" : "public",
       matchesLastSaved: remoteHash(post) === old.remoteHash,
       localStatus: old.status,
+      thumbnail: post.thumbnail ?? null,
     };
   });
 }
@@ -222,7 +223,9 @@ export async function pushVelog(article, account, cwd, confirmed, session = with
           url_slug:
             current?.url_slug ??
             `${article.meta.id}-${digest([account, article.meta.id]).slice(0, 8)}`,
-          thumbnail: current?.thumbnail ?? null,
+          thumbnail: article.meta.cover
+            ? urls.get(article.meta.cover)
+            : (current?.thumbnail ?? null),
           meta: { short_description: current?.short_description ?? "" },
           series_id: current?.series?.id ?? null,
           token: null,
@@ -243,6 +246,7 @@ export async function pushVelog(article, account, cwd, confirmed, session = with
           body,
           tags: input.tags,
           ...flags(article),
+          ...(article.meta.cover ? { thumbnail: input.thumbnail } : {}),
           ...(current
             ? {
                 url_slug: input.url_slug,

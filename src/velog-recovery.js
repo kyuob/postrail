@@ -94,6 +94,7 @@ async function compareBody(article, post, request) {
     matches: false,
     localImages: new Set(refs.map((r) => r.source)).size,
     imagesVerified: refs.length === 0,
+    thumbnailMatches: article.meta.cover === undefined,
   };
   if (source.length !== actual.length) return unverified;
   for (const [index, node] of source.entries()) {
@@ -115,7 +116,13 @@ async function compareBody(article, post, request) {
   } catch {
     return unverified;
   }
-  return { matches: true, localImages: urls.size, imagesVerified: true };
+  return {
+    matches: true,
+    localImages: urls.size,
+    imagesVerified: true,
+    thumbnailMatches:
+      article.meta.cover === undefined || post.thumbnail === urls.get(article.meta.cover),
+  };
 }
 async function inspectSnapshot(article, account, snap, client, user, request) {
   validateVelogUser(user, account);
@@ -140,6 +147,7 @@ async function inspectSnapshot(article, account, snap, client, user, request) {
     visibility:
       post.is_temp === intendedFlags.is_temp && post.is_private === intendedFlags.is_private,
     images: body.imagesVerified,
+    ...(article.meta.cover !== undefined ? { thumbnail: body.thumbnailMatches } : {}),
   };
   const canReconcile =
     ["unknown", "pending"].includes(snap.state.status) &&
@@ -148,6 +156,7 @@ async function inspectSnapshot(article, account, snap, client, user, request) {
     comparisons.body &&
     comparisons.visibility &&
     comparisons.images &&
+    body.thumbnailMatches &&
     distinctTagIdentities(article.meta.tags) &&
     distinctTagIdentities(post.tags);
   const remoteHash = velogRemoteHash(post);
@@ -282,7 +291,7 @@ export async function reconcileVelog(
       if (!checked.result.canReconcile)
         fail(
           "VELOG_RECOVERY_MISMATCH",
-          "Source, ownership, body, title, visibility and local images must match before reconciliation.",
+          "Source, ownership, body, title, visibility, local images and any explicit cover must match before reconciliation.",
         );
       if (checked.result.requiresTagAcceptance && !acceptTags)
         fail(
